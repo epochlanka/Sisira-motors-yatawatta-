@@ -17,6 +17,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"garagems/internal/config"
 	"garagems/internal/middleware"
@@ -129,6 +130,7 @@ func (a *App) funcs() template.FuncMap {
 			return "badge-muted"
 		},
 		"asset":         assetURL,
+		"initials":      initials,
 		"movementLabel": models.MovementLabel,
 		"hours":         models.HoursLabel,
 		"addDays":       addDays,
@@ -196,6 +198,23 @@ func assetURL(name string) string {
 		u += "?v=" + v
 	}
 	return u
+}
+
+// initials returns up to two capital letters for an avatar or brand mark ("Sisira Motors" -> "SM").
+func initials(s string) string {
+	var out []rune
+	for _, w := range strings.Fields(s) {
+		for _, r := range w {
+			if unicode.IsLetter(r) || unicode.IsDigit(r) {
+				out = append(out, unicode.ToUpper(r))
+				break
+			}
+		}
+		if len(out) == 2 {
+			break
+		}
+	}
+	return string(out)
 }
 
 // Page is the data passed to every template.

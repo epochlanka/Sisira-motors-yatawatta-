@@ -1,6 +1,6 @@
 {{define "content"}}
 {{$l := .D.list}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 <div class="page-head"><div><h1>Jobs report</h1><p class="muted">{{date .D.from}} – {{date .D.to}} (by job date)</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
 <form class="filters" method="get" action="/reports/jobs">

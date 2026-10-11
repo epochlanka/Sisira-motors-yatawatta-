@@ -3,13 +3,32 @@
 (function () {
   "use strict";
 
-  // Mobile navigation toggle
-  document.querySelectorAll("[data-nav-toggle]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var nav = document.getElementById("nav");
-      var open = nav.classList.toggle("open");
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
+  // Mobile navigation drawer
+  var nav = document.getElementById("nav");
+  var backdrop = document.querySelector("[data-nav-close]");
+  function setNav(open) {
+    if (!nav) return;
+    nav.classList.toggle("open", open);
+    if (backdrop) backdrop.hidden = !open;
+    document.querySelectorAll("[data-nav-toggle]").forEach(function (b) {
+      b.setAttribute("aria-expanded", open ? "true" : "false");
     });
+  }
+  document.querySelectorAll("[data-nav-toggle]").forEach(function (btn) {
+    btn.addEventListener("click", function () { setNav(!nav.classList.contains("open")); });
+  });
+  if (backdrop) backdrop.addEventListener("click", function () { setNav(false); });
+
+  // User menu: close on outside click or Escape
+  document.addEventListener("click", function (e) {
+    document.querySelectorAll("details.usermenu[open]").forEach(function (d) {
+      if (!d.contains(e.target)) d.removeAttribute("open");
+    });
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape") return;
+    document.querySelectorAll("details.usermenu[open]").forEach(function (d) { d.removeAttribute("open"); });
+    setNav(false);
   });
 
   // Confirmation for destructive / irreversible actions

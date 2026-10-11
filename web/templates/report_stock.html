@@ -1,6 +1,6 @@
 {{define "content"}}
 {{$l := .D.list}}{{$profit := .Can "reports.profit"}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 <div class="page-head"><div><h1>{{if eq ($l.Get "low") "1"}}Low-stock parts{{else}}Stock levels{{end}}</h1><p class="muted">Current stock as of now</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
 <form class="filters" method="get" action="/reports/stock">

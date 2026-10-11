@@ -1,8 +1,11 @@
+{{define "navlink"}}<li><a href="{{.H}}"{{if eq .P.Active .A}} aria-current="page"{{end}}>{{template "icon" .I}}<span>{{.L}}</span></a></li>{{end}}
+
 {{define "layout"}}<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>{{.Title}} · {{.Biz.BusinessName}}</title>
 <link rel="stylesheet" href="{{asset "app.css"}}">
 <script src="{{asset "app.js"}}" defer></script>
@@ -10,45 +13,95 @@
 <body>
 <a class="skip" href="#main">Skip to content</a>
 {{if .Session}}
-<header class="topbar">
-  <button class="nav-toggle" type="button" aria-controls="nav" aria-expanded="false" data-nav-toggle>☰<span class="sr-only"> Menu</span></button>
-  <a class="brand" href="/">{{.Biz.BusinessName}}</a>
-  <div class="userbox">
-    <span>{{.User.FullName}} <small>({{.User.RoleName}})</small></span>
-    <a href="/account/password">Password</a>
-    <form method="post" action="/logout" class="inline">{{template "csrf" .}}<button class="link" type="submit">Sign out</button></form>
-  </div>
-</header>
 <div class="shell">
-  <nav id="nav" class="sidenav" aria-label="Main navigation">
-    <ul>
-      {{if .Can "dashboard.view"}}<li><a href="/"{{if eq .Active "dashboard"}} aria-current="page"{{end}}>Dashboard</a></li>{{end}}
-      {{if .Can "appointments.view"}}<li><a href="/appointments"{{if eq .Active "appointments"}} aria-current="page"{{end}}>Appointments</a></li>{{end}}
-      {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}<li><a href="/jobs"{{if eq .Active "jobs"}} aria-current="page"{{end}}>Jobs</a></li>{{end}}
-      {{if .Can "customers.view"}}<li><a href="/customers"{{if eq .Active "customers"}} aria-current="page"{{end}}>Customers</a></li>
-      <li><a href="/vehicles"{{if eq .Active "vehicles"}} aria-current="page"{{end}}>Vehicles</a></li>{{end}}
-      {{if .Can "invoices.view"}}<li><a href="/invoices"{{if eq .Active "invoices"}} aria-current="page"{{end}}>Invoices</a></li>{{end}}
-      {{if .Can "parts.view"}}<li><a href="/parts"{{if eq .Active "parts"}} aria-current="page"{{end}}>Parts</a></li>{{end}}
-      {{if .Can "purchases.view"}}<li><a href="/purchases"{{if eq .Active "purchases"}} aria-current="page"{{end}}>Purchases</a></li>{{end}}
-      {{if .Can "suppliers.view"}}<li><a href="/suppliers"{{if eq .Active "suppliers"}} aria-current="page"{{end}}>Suppliers</a></li>{{end}}
-      {{if .Can "expenses.view"}}<li><a href="/expenses"{{if eq .Active "expenses"}} aria-current="page"{{end}}>Expenses</a></li>{{end}}
-      {{if .Can "staff.view"}}<li><a href="/staff"{{if eq .Active "staff"}} aria-current="page"{{end}}>Staff</a></li>
-      {{else if .Can "timesheet.self"}}<li><a href="/staff/timesheets"{{if eq .Active "timesheet"}} aria-current="page"{{end}}>My timesheet</a></li>{{end}}
-      {{if .Can "reports.view"}}<li><a href="/reports"{{if eq .Active "reports"}} aria-current="page"{{end}}>Reports</a></li>{{end}}
-      {{if .CanAny "settings.manage" "users.manage" "audit.view"}}<li class="sep" aria-hidden="true"></li>
-      <li><a href="{{if .Can "settings.manage"}}/settings{{else if .Can "users.manage"}}/settings/users{{else}}/settings/audit{{end}}"{{if eq .Active "settings"}} aria-current="page"{{end}}>Settings</a></li>{{end}}
-    </ul>
-  </nav>
-  <main id="main" class="main">
-    {{template "flash" .}}
-    {{template "content" .}}
-  </main>
+  <aside id="nav" class="sidenav" aria-label="Main navigation">
+    <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">{{initials .Biz.BusinessName}}</span><span class="brand-text"><strong>{{.Biz.BusinessName}}</strong><small>Garage management</small></span></a>
+    <nav>
+      <ul>
+        {{if .Can "dashboard.view"}}{{template "navlink" (dict "P" . "H" "/" "A" "dashboard" "I" "dashboard" "L" "Dashboard")}}{{end}}
+      </ul>
+      {{if .CanAny "appointments.view" "jobs.view_all" "jobs.view_assigned" "customers.view"}}
+      <p class="nav-group">Workshop</p>
+      <ul>
+        {{if .Can "appointments.view"}}{{template "navlink" (dict "P" . "H" "/appointments" "A" "appointments" "I" "calendar" "L" "Appointments")}}{{end}}
+        {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}{{template "navlink" (dict "P" . "H" "/jobs" "A" "jobs" "I" "wrench" "L" "Jobs")}}{{end}}
+        {{if .Can "customers.view"}}{{template "navlink" (dict "P" . "H" "/customers" "A" "customers" "I" "users" "L" "Customers")}}
+        {{template "navlink" (dict "P" . "H" "/vehicles" "A" "vehicles" "I" "car" "L" "Vehicles")}}{{end}}
+      </ul>
+      {{end}}
+      {{if .CanAny "invoices.view" "expenses.view"}}
+      <p class="nav-group">Finance</p>
+      <ul>
+        {{if .Can "invoices.view"}}{{template "navlink" (dict "P" . "H" "/invoices" "A" "invoices" "I" "invoice" "L" "Invoices")}}{{end}}
+        {{if .Can "expenses.view"}}{{template "navlink" (dict "P" . "H" "/expenses" "A" "expenses" "I" "wallet" "L" "Expenses")}}{{end}}
+      </ul>
+      {{end}}
+      {{if .CanAny "parts.view" "purchases.view" "suppliers.view"}}
+      <p class="nav-group">Inventory</p>
+      <ul>
+        {{if .Can "parts.view"}}{{template "navlink" (dict "P" . "H" "/parts" "A" "parts" "I" "box" "L" "Parts")}}{{end}}
+        {{if .Can "purchases.view"}}{{template "navlink" (dict "P" . "H" "/purchases" "A" "purchases" "I" "cart" "L" "Purchases")}}{{end}}
+        {{if .Can "suppliers.view"}}{{template "navlink" (dict "P" . "H" "/suppliers" "A" "suppliers" "I" "truck" "L" "Suppliers")}}{{end}}
+      </ul>
+      {{end}}
+      {{if .CanAny "staff.view" "timesheet.self" "reports.view"}}
+      <p class="nav-group">Team &amp; insights</p>
+      <ul>
+        {{if .Can "staff.view"}}{{template "navlink" (dict "P" . "H" "/staff" "A" "staff" "I" "badge" "L" "Staff")}}
+        {{else if .Can "timesheet.self"}}{{template "navlink" (dict "P" . "H" "/staff/timesheets" "A" "timesheet" "I" "clock" "L" "My timesheet")}}{{end}}
+        {{if .Can "reports.view"}}{{template "navlink" (dict "P" . "H" "/reports" "A" "reports" "I" "chart" "L" "Reports")}}{{end}}
+      </ul>
+      {{end}}
+      {{if .CanAny "settings.manage" "users.manage" "audit.view"}}
+      <p class="nav-group">Administration</p>
+      <ul>
+        {{template "navlink" (dict "P" . "H" (printf "%s" (or (and (.Can "settings.manage") "/settings") (and (.Can "users.manage") "/settings/users") "/settings/audit")) "A" "settings" "I" "settings" "L" "Settings")}}
+      </ul>
+      {{end}}
+    </nav>
+  </aside>
+  <div class="nav-backdrop" data-nav-close hidden></div>
+  <div class="main-col">
+    <header class="topbar">
+      <button class="nav-toggle" type="button" aria-controls="nav" aria-expanded="false" data-nav-toggle>{{template "icon" "menu"}}<span class="sr-only">Menu</span></button>
+      <span class="topbar-title">{{.Title}}</span>
+      <span class="topbar-date">{{date .Today}}</span>
+      <details class="usermenu">
+        <summary><span class="avatar" aria-hidden="true">{{initials .User.FullName}}</span><span class="who"><strong>{{.User.FullName}}</strong><small>{{.User.RoleName}}</small></span>{{template "icon" "chevron"}}</summary>
+        <div class="menu" role="menu">
+          <a href="/account/password" role="menuitem">{{template "icon" "key"}}Change password</a>
+          {{if .Can "timesheet.self"}}<a href="/staff/timesheets" role="menuitem">{{template "icon" "clock"}}My timesheet</a>{{end}}
+          <form method="post" action="/logout">{{template "csrf" .}}<button type="submit" role="menuitem">{{template "icon" "logout"}}Sign out</button></form>
+        </div>
+      </details>
+    </header>
+    <main id="main" class="main">
+      {{template "flash" .}}
+      {{template "content" .}}
+    </main>
+  </div>
 </div>
 {{else}}
-<main id="main" class="main main-narrow">
-  {{template "flash" .}}
-  {{template "content" .}}
-</main>
+<div class="auth">
+  <section class="auth-brand" aria-hidden="true">
+    <div class="auth-brand-top"><span class="brand-mark">{{initials .Biz.BusinessName}}</span><span>{{.Biz.BusinessName}}</span></div>
+    <div class="auth-pitch">
+      <h2>Workshop, parts and billing in one place.</h2>
+      <ul>
+        <li>{{template "icon" "calendar"}}Appointments and job cards</li>
+        <li>{{template "icon" "box"}}Spare-parts stock and purchasing</li>
+        <li>{{template "icon" "invoice"}}Invoices, payments and reports</li>
+      </ul>
+    </div>
+    <p class="auth-foot">{{with .Biz.Address}}{{.}}{{end}}{{with .Biz.Phone}} · {{.}}{{end}}</p>
+  </section>
+  <main id="main" class="auth-main">
+    <div class="auth-box">
+      {{template "flash" .}}
+      {{template "content" .}}
+    </div>
+  </main>
+</div>
 {{end}}
 </body>
 </html>{{end}}

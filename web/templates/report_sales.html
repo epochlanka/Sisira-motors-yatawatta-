@@ -1,6 +1,6 @@
 {{define "content"}}
 {{$l := .D.list}}{{$t := .D.totals}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 <div class="page-head"><div><h1>Sales &amp; payments</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · void invoices and payments are excluded</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
 <form class="filters" method="get" action="/reports/sales">

@@ -1,5 +1,5 @@
 {{define "content"}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 {{$l := .D.list}}
 <div class="page-head"><div><h1>Expenses report</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · valid (non-void) expenses</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>

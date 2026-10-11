@@ -1,5 +1,5 @@
 {{define "content"}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 <div class="page-head"><div><h1>Popular services</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · labour and extra charges on jobs completed in the period</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
 <form class="filters" method="get" action="/reports/services">

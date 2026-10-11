@@ -1,18 +1,42 @@
+{{define "reportcard"}}<a class="report-card" href="{{.H}}"><span class="report-icon tone-{{.T}}">{{template "icon" .I}}</span><span><strong>{{.L}}</strong><small>{{.D}}</small></span></a>{{end}}
+
 {{define "content"}}
-<div class="page-head"><div><h1>Reports</h1><p class="muted">All reports can be filtered by date and printed with your browser.</p></div></div>
-<div class="grid grid-3">
-  {{if .Can "jobs.view_all"}}<a class="stat" href="/reports/jobs"><div class="value">Jobs</div><div class="label">Jobs opened and completed by status, staff and date</div></a>{{end}}
-  {{if .Can "jobs.view_all"}}<a class="stat" href="/reports/services"><div class="value">Popular services</div><div class="label">Most requested labour and services, by jobs and value</div></a>{{end}}
-  {{if .Can "staff.view"}}<a class="stat" href="/reports/staff"><div class="value">Staff productivity</div><div class="label">Jobs completed, hours billed and hours worked per staff member</div></a>{{end}}
-  {{if and (.Can "reports.profit") (.Can "invoices.view")}}<a class="stat" href="/reports/profit"><div class="value">Income &amp; expenses</div><div class="label">Net sales, cost of parts, expenses and net profit</div></a>{{end}}
-  {{if .Can "expenses.view"}}<a class="stat" href="/reports/expenses"><div class="value">Expenses</div><div class="label">Spending by category and date</div></a>{{end}}
-  {{if .Can "customers.view"}}<a class="stat" href="/vehicles/service-due"><div class="value">Service due</div><div class="label">Vehicles due or overdue for their next service (call list)</div></a>{{end}}
-  {{if .Can "invoices.view"}}<a class="stat" href="/reports/sales"><div class="value">Sales &amp; payments</div><div class="label">Invoice totals, tax, discounts and payments received by method</div></a>
-  <a class="stat" href="/reports/outstanding"><div class="value">Outstanding</div><div class="label">Unpaid and partially paid invoices with age</div></a>{{end}}
-  {{if .Can "parts.view"}}<a class="stat" href="/reports/parts-sold"><div class="value">Parts sold</div><div class="label">Quantities and revenue from invoiced parts{{if .Can "reports.profit"}}, with cost-based margin{{end}}</div></a>
-  <a class="stat" href="/reports/stock"><div class="value">Stock levels</div><div class="label">Current stock{{if .Can "reports.profit"}} and stock value{{end}}</div></a>
-  <a class="stat" href="/reports/stock?low=1"><div class="value">Low stock</div><div class="label">Parts at or below their reorder level</div></a>
-  <a class="stat" href="/reports/movements"><div class="value">Stock movements</div><div class="label">Issues, returns, receipts and adjustments</div></a>{{end}}
-  {{if .Can "purchases.view"}}<a class="stat" href="/reports/purchases"><div class="value">Purchases</div><div class="label">Purchases by supplier, date and part</div></a>{{end}}
-</div>
+<div class="page-head"><div><h1>Reports</h1><p class="muted">Filter any report by date, then print it or save it as PDF from your browser.</p></div></div>
+
+{{if .CanAny "invoices.view" "expenses.view"}}
+<section class="report-group">
+  <h2>Sales &amp; finance</h2>
+  <div class="report-grid">
+    {{if and (.Can "reports.profit") (.Can "invoices.view")}}{{template "reportcard" (dict "H" "/reports/profit" "I" "chart" "T" "green" "L" "Income & expenses" "D" "Net sales, cost of parts, expenses and net profit")}}{{end}}
+    {{if .Can "invoices.view"}}{{template "reportcard" (dict "H" "/reports/sales" "I" "money" "T" "blue" "L" "Sales & payments" "D" "Invoice totals, tax, discounts and payments by method")}}
+    {{template "reportcard" (dict "H" "/reports/outstanding" "I" "invoice" "T" "red" "L" "Outstanding balances" "D" "Unpaid and partially paid invoices with age")}}{{end}}
+    {{if .Can "expenses.view"}}{{template "reportcard" (dict "H" "/reports/expenses" "I" "wallet" "T" "amber" "L" "Expenses" "D" "Spending by category and date")}}{{end}}
+  </div>
+</section>
+{{end}}
+
+{{if .CanAny "jobs.view_all" "staff.view" "customers.view"}}
+<section class="report-group">
+  <h2>Workshop &amp; team</h2>
+  <div class="report-grid">
+    {{if .Can "jobs.view_all"}}{{template "reportcard" (dict "H" "/reports/jobs" "I" "wrench" "T" "blue" "L" "Jobs" "D" "Jobs opened and completed by status, staff and date")}}
+    {{template "reportcard" (dict "H" "/reports/services" "I" "check" "T" "green" "L" "Popular services" "D" "Most requested labour and services, by jobs and value")}}{{end}}
+    {{if .Can "staff.view"}}{{template "reportcard" (dict "H" "/reports/staff" "I" "badge" "T" "violet" "L" "Staff productivity" "D" "Jobs completed, hours billed and hours worked")}}{{end}}
+    {{if .Can "customers.view"}}{{template "reportcard" (dict "H" "/vehicles/service-due" "I" "car" "T" "amber" "L" "Service due" "D" "Vehicles due or overdue for service (call list)")}}{{end}}
+  </div>
+</section>
+{{end}}
+
+{{if .CanAny "parts.view" "purchases.view"}}
+<section class="report-group">
+  <h2>Inventory</h2>
+  <div class="report-grid">
+    {{if .Can "parts.view"}}{{template "reportcard" (dict "H" "/reports/parts-sold" "I" "box" "T" "blue" "L" "Parts sold" "D" (printf "Quantities and revenue from invoiced parts%s" (or (and (.Can "reports.profit") ", with margin") "")))}}
+    {{template "reportcard" (dict "H" "/reports/stock" "I" "dashboard" "T" "green" "L" "Stock levels" "D" (printf "Current stock%s" (or (and (.Can "reports.profit") " and stock value") "")))}}
+    {{template "reportcard" (dict "H" "/reports/stock?low=1" "I" "alert" "T" "red" "L" "Low stock" "D" "Parts at or below their reorder level")}}
+    {{template "reportcard" (dict "H" "/reports/movements" "I" "truck" "T" "violet" "L" "Stock movements" "D" "Issues, returns, receipts and adjustments")}}{{end}}
+    {{if .Can "purchases.view"}}{{template "reportcard" (dict "H" "/reports/purchases" "I" "cart" "T" "amber" "L" "Purchases" "D" "Purchases by supplier, date and part")}}{{end}}
+  </div>
+</section>
+{{end}}
 {{end}}

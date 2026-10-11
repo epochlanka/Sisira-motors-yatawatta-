@@ -1,5 +1,5 @@
 {{define "content"}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 {{$s := .D.s}}
 <div class="page-head"><div><h1>Income &amp; expenses</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · issued invoices by invoice date, expenses by expense date</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
@@ -15,7 +15,7 @@
 </div>
 <div class="grid grid-2">
 <section class="card"><h2>Summary</h2>
-  <table class="totals" style="margin-left:0;max-width:none">
+  <table class="totals totals-wide">
     <tbody>
       <tr><td>Invoices issued ({{$s.Invoices}}), incl. tax</td><td class="num">{{money $s.Gross}}</td></tr>
       <tr><td>Less {{or .Biz.TaxName "tax"}} collected</td><td class="num">−{{money $s.Tax}}</td></tr>

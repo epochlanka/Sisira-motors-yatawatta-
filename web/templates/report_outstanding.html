@@ -1,6 +1,6 @@
 {{define "content"}}
 {{$l := .D.list}}{{$t := .D.totals}}
-{{template "reportnav"}}
+{{template "reportnav" .}}
 <div class="page-head"><div><h1>Outstanding balances</h1><p class="muted">Issued invoices with an unpaid balance as of {{date .Today}}</p></div>
   <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
 <form class="filters" method="get" action="/reports/outstanding">
