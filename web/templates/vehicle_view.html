@@ -2,7 +2,7 @@
 {{$v := .D.v}}
 <div class="page-head">
   <div><p class="crumbs"><a href="/vehicles">Vehicles</a> /</p>
-    <h1>{{$v.Registration}} {{if $v.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1>
+    <h1>{{template "plate" $v.Registration}} {{if $v.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1>
     <p class="muted">{{$v.Make}} {{$v.Model}} {{nullInt $v.Year}}</p></div>
   <div class="actions">
     {{if and (.Can "jobs.create") (not $v.Archived)}}<a class="btn" href="/jobs/new?customer_id={{$v.CustomerID}}&amp;vehicle_id={{$v.ID}}">+ Open job</a>{{end}}

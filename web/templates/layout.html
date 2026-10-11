@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="{{asset "app.css"}}">
 <script src="{{asset "app.js"}}" defer></script>
 </head>
-<body>
+<body class="sec-{{or .Active "none"}}">
 <a class="skip" href="#main">Skip to content</a>
 {{if .Session}}
 <div class="shell">

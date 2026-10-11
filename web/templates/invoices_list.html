@@ -38,7 +38,7 @@
     </tr></thead>
     <tbody>{{range .D.invoices}}<tr{{if .IsVoid}} class="void"{{end}}>
       <td><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a><br><small>{{.JobNumber}}</small></td><td>{{date .InvoiceDate}}</td>
-      <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td><td>{{.VehicleReg}}</td>
+      <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{end}}</td>
       <td>{{if .IsVoid}}{{template "status" "Void"}}{{else}}{{template "status" .PaymentStatus}}{{end}}</td>
       <td class="num">{{money .Total}}</td><td class="num">{{money .AmountPaid}}</td><td class="num">{{if not .IsVoid}}{{money .Balance}}{{end}}</td>
     </tr>{{end}}</tbody>

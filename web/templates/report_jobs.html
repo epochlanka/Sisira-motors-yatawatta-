@@ -21,7 +21,7 @@
 <section class="card"><h2>Jobs</h2>
 {{if .D.jobs}}<div class="table-wrap"><table>
   <thead><tr>{{template "th" (dict "L" $l "K" "number" "T" "Job")}}{{template "th" (dict "L" $l "K" "date" "T" "Date")}}{{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}<th scope="col">Vehicle</th>{{template "th" (dict "L" $l "K" "status" "T" "Status")}}<th scope="col">Completed</th>{{template "th" (dict "L" $l "K" "assigned" "T" "Assigned")}}<th scope="col" class="num">Value</th><th scope="col">Invoice</th></tr></thead>
-  <tbody>{{range .D.jobs}}<tr><td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{.CustomerName}}</td><td>{{.VehicleReg}}</td><td>{{template "status" .Status}}</td><td>{{if .CompletedDate}}{{date .CompletedDate}}{{end}}</td><td>{{.AssignedName}}</td><td class="num">{{money .Total}}</td><td>{{.InvoiceNo}}</td></tr>{{end}}</tbody>
+  <tbody>{{range .D.jobs}}<tr><td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{.CustomerName}}</td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{end}}</td><td>{{template "status" .Status}}</td><td>{{if .CompletedDate}}{{date .CompletedDate}}{{end}}</td><td>{{.AssignedName}}</td><td class="num">{{money .Total}}</td><td>{{.InvoiceNo}}</td></tr>{{end}}</tbody>
 </table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No jobs in this period.</strong></div>{{end}}
 </section>
 {{end}}

@@ -1,32 +1,37 @@
 {{define "content"}}
-<div class="page-head">
-  <div><h1>Dashboard</h1><p class="muted">{{date .Today}}</p></div>
-  <div class="actions">
-    {{if .Can "jobs.create"}}<a class="btn" href="/jobs/new">+ Open job</a>{{end}}
-    {{if .Can "customers.edit"}}<a class="btn btn-secondary" href="/customers/new">+ Customer</a>{{end}}
+<section class="welcome">
+  <div>
+    <p class="welcome-date">{{date .Today}}</p>
+    <h1>{{greeting}}, {{.User.FullName}}</h1>
+    <p>Here is what is happening at {{.Biz.BusinessName}} today.</p>
   </div>
-</div>
+  <div class="welcome-actions">
+    {{if .Can "jobs.create"}}<a class="btn btn-light" href="/jobs/new">{{template "icon" "wrench"}}Open job</a>{{end}}
+    {{if .Can "appointments.edit"}}<a class="btn btn-ghost" href="/appointments/new">{{template "icon" "calendar"}}Book appointment</a>{{end}}
+    {{if .Can "customers.edit"}}<a class="btn btn-ghost" href="/customers/new">{{template "icon" "users"}}New customer</a>{{end}}
+  </div>
+</section>
 {{$s := .D.stats}}
 {{if .D.canClock}}{{template "clockcard" .}}{{end}}
 <div class="stats">
   {{if .Can "appointments.view"}}
-  <a class="stat" href="/appointments"><div class="label">Appointments still to arrive today</div><div class="value">{{$s.ApptsToday}}</div></a>
-  {{end}}
-  {{if .Can "customers.view"}}
-  <a class="stat{{if gt $s.ServiceDue 0}} alert{{end}}" href="/vehicles/service-due?within=7"><div class="label">Services due (7 days)</div><div class="value">{{$s.ServiceDue}}</div></a>
+  {{template "kpi" (dict "H" "/appointments" "I" "calendar" "T" "violet" "L" "Appointments to arrive today" "V" $s.ApptsToday)}}
   {{end}}
   {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}
-  <a class="stat" href="/jobs?status=active"><div class="label">{{if .Can "jobs.view_all"}}Open jobs{{else}}My open jobs{{end}}</div><div class="value">{{$s.ActiveJobs}}</div></a>
-  <a class="stat" href="/jobs?status=Waiting+for+Parts"><div class="label">Waiting for parts</div><div class="value">{{$s.WaitingParts}}</div></a>
-  <a class="stat{{if gt $s.ToInvoice 0}} alert{{end}}" href="/jobs?uninvoiced=1"><div class="label">Completed, not invoiced</div><div class="value">{{$s.ToInvoice}}</div></a>
+  {{template "kpi" (dict "H" "/jobs?status=active" "I" "wrench" "T" "blue" "L" (or (and (.Can "jobs.view_all") "Open jobs") "My open jobs") "V" $s.ActiveJobs)}}
+  {{template "kpi" (dict "H" "/jobs?status=Waiting+for+Parts" "I" "box" "T" "amber" "L" "Waiting for parts" "V" $s.WaitingParts)}}
+  {{template "kpi" (dict "H" "/jobs?uninvoiced=1" "I" "invoice" "T" "red" "L" "Completed, not invoiced" "V" $s.ToInvoice "A" (gt $s.ToInvoice 0))}}
   {{end}}
   {{if .Can "invoices.view"}}
-  <a class="stat{{if gt $s.UnpaidCount 0}} alert{{end}}" href="/invoices?pay=outstanding"><div class="label">Unpaid invoices ({{$s.UnpaidCount}})</div><div class="value">{{money $s.Outstanding}}</div></a>
-  <a class="stat" href="/payments?from={{.Today}}&amp;to={{.Today}}"><div class="label">Payments today</div><div class="value">{{money $s.TodayPayments}}</div></a>
-  <a class="stat" href="/invoices?from={{.Today}}&amp;to={{.Today}}"><div class="label">Invoiced today</div><div class="value">{{money $s.TodayInvoiced}}</div></a>
+  {{template "kpi" (dict "H" "/invoices?pay=outstanding" "I" "alert" "T" "red" "L" (printf "Unpaid invoices (%d)" $s.UnpaidCount) "V" (money $s.Outstanding) "A" (gt $s.UnpaidCount 0))}}
+  {{template "kpi" (dict "H" (printf "/payments?from=%s&to=%s" .Today .Today) "I" "money" "T" "green" "L" "Payments today" "V" (money $s.TodayPayments))}}
+  {{template "kpi" (dict "H" (printf "/invoices?from=%s&to=%s" .Today .Today) "I" "chart" "T" "blue" "L" "Invoiced today" "V" (money $s.TodayInvoiced))}}
+  {{end}}
+  {{if .Can "customers.view"}}
+  {{template "kpi" (dict "H" "/vehicles/service-due?within=7" "I" "car" "T" "amber" "L" "Services due (7 days)" "V" $s.ServiceDue "A" (gt $s.ServiceDue 0))}}
   {{end}}
   {{if .Can "parts.view"}}
-  <a class="stat{{if gt $s.LowStock 0}} alert{{end}}" href="/parts?low=1"><div class="label">Low-stock parts</div><div class="value">{{$s.LowStock}}</div></a>
+  {{template "kpi" (dict "H" "/parts?low=1" "I" "box" "T" "red" "L" "Low-stock parts" "V" $s.LowStock "A" (gt $s.LowStock 0))}}
   {{end}}
 </div>
 
@@ -38,7 +43,7 @@
     <div class="table-wrap"><table>
       <thead><tr><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Vehicle</th><th scope="col">Service</th><th scope="col">Staff</th><th scope="col">Status</th><th scope="col"></th></tr></thead>
       <tbody>{{range .}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
-        <td><a href="/appointments/{{.ID}}">{{.StartTime}}</a></td><td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{or .VehicleReg "–"}}</td>
+        <td><a href="/appointments/{{.ID}}">{{.StartTime}}</a></td><td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{else}}–{{end}}</td>
         <td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td>
         <td>{{template "status" .Status}}{{if .JobID.Valid}} <small><a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a></small>{{end}}</td>
         <td class="actions">{{if and .Open ($.Can "appointments.edit") ($.Can "jobs.create")}}<form method="post" action="/appointments/{{.ID}}/check-in" class="inline">{{template "csrf" $}}<button class="btn btn-sm btn-ok" type="submit">Check in</button></form>{{end}}</td>
@@ -55,7 +60,7 @@
       <thead><tr><th scope="col">Job</th><th scope="col">Date</th><th scope="col">Customer</th><th scope="col">Vehicle</th><th scope="col">Status</th><th scope="col">Assigned</th><th scope="col" class="num">Value</th></tr></thead>
       <tbody>{{range .}}<tr>
         <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{.CustomerName}}</td>
-        <td>{{if .VehicleReg}}{{.VehicleReg}} <small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
+        <td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}<br><small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
         <td>{{template "status" .Status}}</td><td>{{.AssignedName}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
     </table></div>
     {{else}}<div class="empty"><strong>No open jobs.</strong>{{if $.Can "jobs.create"}}Use “Open job” to start one.{{end}}</div>{{end}}

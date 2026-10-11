@@ -2,7 +2,8 @@
 {{$c := .D.c}}
 <div class="page-head">
   <div><p class="crumbs"><a href="/customers">Customers</a> /</p>
-    <h1>{{$c.Name}} {{if $c.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1></div>
+    <h1>{{$c.Name}} {{if $c.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1>
+    <p class="chips"><a class="chip" href="tel:{{$c.Phone}}">{{$c.Phone}}</a>{{with $c.Email}}<a class="chip" href="mailto:{{.}}">{{.}}</a>{{end}}{{if $.Can "invoices.view"}}<span class="chip{{if pos $c.Balance}} chip-danger{{end}}">Balance {{money $c.Balance}}</span>{{end}}</p></div>
   <div class="actions">
     {{if and (.Can "jobs.create") (not $c.Archived)}}<a class="btn" href="/jobs/new?customer_id={{$c.ID}}">+ Open job</a>{{end}}
     {{if and (.Can "appointments.edit") (not $c.Archived)}}<a class="btn btn-secondary" href="/appointments/new?customer_id={{$c.ID}}">Book appointment</a>{{end}}
@@ -34,7 +35,7 @@
     <div class="table-wrap"><table>
       <thead><tr><th scope="col">Registration</th><th scope="col">Vehicle</th><th scope="col"></th></tr></thead>
       <tbody>{{range .D.vehicles}}<tr{{if .Archived}} class="inactive"{{end}}>
-        <td><a href="/vehicles/{{.ID}}">{{.Registration}}</a>{{if .Archived}} <span class="badge badge-muted">Archived</span>{{end}}</td>
+        <td><a href="/vehicles/{{.ID}}">{{template "plate" .Registration}}</a>{{if .Archived}} <span class="badge badge-muted">Archived</span>{{end}}</td>
         <td>{{.Make}} {{.Model}} {{nullInt .Year}}</td>
         <td class="actions">{{if and ($.Can "jobs.create") (not .Archived) (not $c.Archived)}}<a class="btn btn-sm" href="/jobs/new?customer_id={{$c.ID}}&amp;vehicle_id={{.ID}}">Open job</a>{{end}}</td>
       </tr>{{end}}</tbody>
@@ -47,7 +48,7 @@
   <h2>Upcoming appointments</h2>
   <div class="table-wrap"><table>
     <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Vehicle</th><th scope="col">Service</th><th scope="col">Staff</th></tr></thead>
-    <tbody>{{range .D.appts}}<tr><td><a href="/appointments/{{.ID}}">{{date .ApptDate}}</a></td><td>{{.StartTime}}–{{.EndTime}}</td><td>{{or .VehicleReg "–"}}</td><td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td></tr>{{end}}</tbody>
+    <tbody>{{range .D.appts}}<tr><td><a href="/appointments/{{.ID}}">{{date .ApptDate}}</a></td><td>{{.StartTime}}–{{.EndTime}}</td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{else}}–{{end}}</td><td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td></tr>{{end}}</tbody>
   </table></div>
 </section>
 {{end}}
@@ -58,7 +59,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th scope="col">Job</th><th scope="col">Date</th><th scope="col">Vehicle</th><th scope="col">Issue</th><th scope="col">Status</th><th scope="col">Invoice</th><th scope="col" class="num">Value</th></tr></thead>
     <tbody>{{range .D.jobs}}<tr>
-      <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{or .VehicleReg "–"}}</td>
+      <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{else}}–{{end}}</td>
       <td>{{.ReportedIssue}}</td><td>{{template "status" .Status}}</td>
       <td>{{if .InvoiceID.Valid}}{{if $.Can "invoices.view"}}<a href="/invoices/{{.InvoiceID.Int64}}">{{.InvoiceNo}}</a>{{else}}{{.InvoiceNo}}{{end}}{{else}}–{{end}}</td>
       <td class="num">{{money .Total}}</td></tr>{{end}}</tbody>

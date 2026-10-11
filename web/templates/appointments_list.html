@@ -32,7 +32,7 @@
     <tbody>{{range .D.appts}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
       <td class="nowrap"><a href="/appointments/{{.ID}}"><strong>{{.StartTime}}</strong>–{{.EndTime}}</a></td>
       <td>{{if .CustomerID.Valid}}<a href="/customers/{{.CustomerID.Int64}}">{{.Name}}</a>{{else}}{{.Name}} <span class="badge badge-muted">New</span>{{end}}<br><small>{{.ContactPhone}}</small></td>
-      <td>{{or .VehicleReg "–"}}{{with .VehicleDesc}}<br><small>{{.}}</small>{{end}}</td>
+      <td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{else}}–{{end}}{{with .VehicleDesc}}<br><small>{{.}}</small>{{end}}</td>
       <td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td>
       <td>{{template "status" .Status}}{{if .JobID.Valid}}<br><small><a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a></small>{{end}}</td>
       <td class="actions">{{if and .Open ($.Can "appointments.edit") ($.Can "jobs.create") (eq .ApptDate $.Today)}}
@@ -74,7 +74,7 @@
     </tr></thead>
     <tbody>{{range .D.appts}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
       <td><a href="/appointments/{{.ID}}">{{date .ApptDate}}</a><br><small>{{.StartTime}}–{{.EndTime}}</small></td>
-      <td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{or .VehicleReg "–"}}</td><td>{{.Service}}</td>
+      <td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}{{else}}–{{end}}</td><td>{{.Service}}</td>
       <td>{{or .AssignedName "–"}}</td><td>{{template "status" .Status}}</td>
     </tr>{{end}}</tbody>
   </table></div>

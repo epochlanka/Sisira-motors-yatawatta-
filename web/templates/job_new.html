@@ -12,7 +12,7 @@
     <h2>Matching vehicles</h2>
     {{if .D.vehicles}}
     <div class="table-wrap"><table><tbody>{{range .D.vehicles}}<tr>
-      <td><strong>{{.Registration}}</strong><br><small>{{.Make}} {{.Model}}</small></td>
+      <td>{{template "plate" .Registration}}<br><small>{{.Make}} {{.Model}}</small></td>
       <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td>
       <td class="actions"><a class="btn btn-sm" href="/jobs/new?customer_id={{.CustomerID}}&amp;vehicle_id={{.ID}}">Open job</a></td>
     </tr>{{end}}</tbody></table></div>

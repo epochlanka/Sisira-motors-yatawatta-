@@ -5,7 +5,7 @@
   <div>
     <p class="crumbs"><a href="/jobs">Jobs</a> /</p>
     <h1>{{$j.JobNumber}} {{template "status" $j.Status}}</h1>
-    <p class="muted">{{date $j.JobDate}} · {{$j.CustomerName}}{{if $j.VehicleReg}} · {{$j.VehicleReg}} {{$j.VehicleDesc}}{{else}} · counter sale{{end}}{{with .D.appt}} · from <a href="/appointments/{{.ID}}">appointment {{date .ApptDate}} {{.StartTime}}</a>{{end}}</p>
+    <p class="muted">{{date $j.JobDate}} · {{$j.CustomerName}}{{if $j.VehicleReg}} · {{template "plate" $j.VehicleReg}} {{$j.VehicleDesc}}{{else}} · counter sale{{end}}{{with .D.appt}} · from <a href="/appointments/{{.ID}}">appointment {{date .ApptDate}} {{.StartTime}}</a>{{end}}</p>
   </div>
   <div class="actions">
     {{if .CanAny "jobs.edit" "jobs.notes"}}<a class="btn btn-secondary" href="/jobs/{{$j.ID}}/edit">Edit details</a>{{end}}
@@ -19,6 +19,17 @@
     {{end}}
   </div>
 </div>
+
+{{if ne $j.Status "Cancelled"}}
+{{$started := or (ne $j.Status "Open") $inv}}{{$done := or (eq $j.Status "Completed") $inv}}{{$paid := and $inv (eq $inv.PaymentStatus "Paid")}}
+<ol class="steps" aria-label="Job progress">
+  <li class="done"><span class="dot">{{template "icon" "check"}}</span><span>Opened<small>{{date $j.JobDate}}</small></span></li>
+  <li class="{{if $started}}done{{else}}current{{end}}"><span class="dot">{{if $started}}{{template "icon" "check"}}{{else}}2{{end}}</span><span>{{if eq $j.Status "Waiting for Parts"}}Waiting for parts{{else}}In progress{{end}}<small>{{or $j.AssignedName "Not assigned"}}</small></span></li>
+  <li class="{{if $done}}done{{else if $started}}current{{end}}"><span class="dot">{{if $done}}{{template "icon" "check"}}{{else}}3{{end}}</span><span>Completed<small>{{if $j.CompletedDate}}{{date $j.CompletedDate}}{{else}}–{{end}}</small></span></li>
+  <li class="{{if $inv}}done{{else if $done}}current{{end}}"><span class="dot">{{if $inv}}{{template "icon" "check"}}{{else}}4{{end}}</span><span>Invoiced<small>{{if $inv}}{{$inv.InvoiceNumber}}{{else}}–{{end}}</small></span></li>
+  <li class="{{if $paid}}done{{else if $inv}}current{{end}}"><span class="dot">{{if $paid}}{{template "icon" "check"}}{{else}}5{{end}}</span><span>Paid<small>{{if $inv}}{{$inv.PaymentStatus}}{{else}}–{{end}}</small></span></li>
+</ol>
+{{else}}<p class="notice">This job was cancelled. Any parts used were returned to stock.</p>{{end}}
 
 <section class="card" aria-label="Totals and balance">
   <div class="money-panel">

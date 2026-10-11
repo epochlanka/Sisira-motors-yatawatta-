@@ -4,7 +4,7 @@
 <section class="card"><h2>Users</h2>
   <div class="table-wrap"><table>
     <thead><tr><th scope="col">Username</th><th scope="col">Name</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Created</th></tr></thead>
-    <tbody>{{range .D.users}}<tr{{if not .Active}} class="inactive"{{end}}><td><a href="/settings/users/{{.ID}}">{{.Username}}</a></td><td>{{.FullName}}</td><td>{{.RoleName}}</td>
+    <tbody>{{range .D.users}}<tr{{if not .Active}} class="inactive"{{end}}><td><a href="/settings/users/{{.ID}}">{{.Username}}</a></td><td><span class="person">{{template "avatar" .FullName}}{{.FullName}}</span></td><td>{{.RoleName}}</td>
       <td>{{if .Active}}{{template "status" "Active"}}{{else}}{{template "status" "Inactive"}}{{end}}{{if .MustChangePassword}} <span class="badge badge-warn">Must change password</span>{{end}}</td><td>{{datetime .CreatedAt}}</td></tr>{{end}}</tbody>
   </table></div>
 </section>

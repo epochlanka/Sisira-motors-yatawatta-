@@ -24,7 +24,7 @@
       {{if .Can "invoices.view"}}{{template "th" (dict "L" $l "K" "balance" "T" "Balance due" "C" "num")}}{{end}}
     </tr></thead>
     <tbody>{{range .D.customers}}<tr{{if .Archived}} class="inactive"{{end}}>
-      <td><a href="/customers/{{.ID}}">{{.Name}}</a>{{if .Archived}} <span class="badge badge-muted">Archived</span>{{end}}</td>
+      <td><span class="person">{{template "avatar" .Name}}<a href="/customers/{{.ID}}">{{.Name}}</a></span>{{if .Archived}} <span class="badge badge-muted">Archived</span>{{end}}</td>
       <td>{{.Phone}}</td><td>{{.Email}}</td><td class="num">{{.VehicleCount}}</td>
       {{if $.Can "invoices.view"}}<td class="num">{{if pos .Balance}}{{money .Balance}}{{else}}–{{end}}</td>{{end}}
     </tr>{{end}}</tbody>

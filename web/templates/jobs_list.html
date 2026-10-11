@@ -38,7 +38,7 @@
     <tbody>{{range .D.jobs}}<tr>
       <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td>
       <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td>
-      <td>{{if .VehicleReg}}{{.VehicleReg}}<br><small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
+      <td>{{if .VehicleReg}}{{template "plate" .VehicleReg}}<br><small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
       <td>{{.ReportedIssue}}</td><td>{{template "status" .Status}}</td><td>{{or .AssignedName "–"}}</td>
       <td class="num">{{money .Total}}</td><td>{{or .InvoiceNo "–"}}</td>
     </tr>{{end}}</tbody>

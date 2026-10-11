@@ -22,7 +22,7 @@
     </tr></thead>
     <tbody>{{range .D.vehicles}}<tr>
       <td>{{date .NextServiceDate}}<br>{{if .ServiceDue $.Today}}{{template "status" "Overdue"}}{{else}}{{template "status" "Due soon"}}{{end}}</td>
-      <td><a href="/vehicles/{{.ID}}">{{.Registration}}</a><br><small>{{.Make}} {{.Model}}</small></td>
+      <td><a href="/vehicles/{{.ID}}">{{template "plate" .Registration}}</a><br><small>{{.Make}} {{.Model}}</small></td>
       <td><a href="/customers/{{.CustomerID}}">{{.CustomerName}}</a></td><td><a href="tel:{{.CustomerPhone}}">{{.CustomerPhone}}</a></td>
       <td class="num">{{nullInt .NextServiceKm}}</td><td class="num">{{nullInt .LastOdometer}}</td><td>{{if .LastVisit}}{{date .LastVisit}}{{else}}–{{end}}</td><td>{{.ServiceNote}}</td>
       <td class="actions no-print">{{if $.Can "appointments.edit"}}<a class="btn btn-sm" href="/appointments/new?customer_id={{.CustomerID}}&amp;vehicle_id={{.ID}}">Book</a>{{end}}</td>

@@ -73,3 +73,9 @@
   <strong>{{.Biz.BusinessName}}</strong>{{with .Biz.Address}} · {{.}}{{end}}{{with .Biz.Phone}} · {{.}}{{end}}
   <span>Printed {{date .Today}}</span>
 </div>{{end}}
+
+{{define "plate"}}<span class="plate">{{.}}</span>{{end}}
+{{define "avatar"}}<span class="avatar avatar-sm" aria-hidden="true">{{initials .}}</span>{{end}}
+
+{{/* KPI tile. dict: H=href I=icon T=tone L=label V=value A=alert */}}
+{{define "kpi"}}<a class="stat stat-kpi{{if .A}} alert{{end}}" href="{{.H}}"><span class="stat-icon tone-{{.T}}">{{template "icon" .I}}</span><div class="label">{{.L}}</div><div class="value">{{.V}}</div></a>{{end}}

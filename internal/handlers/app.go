@@ -5,8 +5,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
@@ -129,8 +129,17 @@ func (a *App) funcs() template.FuncMap {
 			}
 			return "badge-muted"
 		},
-		"asset":         assetURL,
-		"initials":      initials,
+		"asset":    assetURL,
+		"initials": initials,
+		"greeting": func() string {
+			switch h := time.Now().In(models.Location()).Hour(); {
+			case h < 12:
+				return "Good morning"
+			case h < 17:
+				return "Good afternoon"
+			}
+			return "Good evening"
+		},
 		"movementLabel": models.MovementLabel,
 		"hours":         models.HoursLabel,
 		"addDays":       addDays,
@@ -141,11 +150,11 @@ func (a *App) funcs() template.FuncMap {
 			}
 			return t.Format("Mon 2 Jan")
 		},
-		"add":           func(a, b int) int { return a + b },
-		"lower":         strings.ToLower,
-		"neg":           func(m models.Money) bool { return m < 0 },
-		"pos":           func(m models.Money) bool { return m > 0 },
-		"qpos":          func(q models.Qty) bool { return q > 0 },
+		"add":   func(a, b int) int { return a + b },
+		"lower": strings.ToLower,
+		"neg":   func(m models.Money) bool { return m < 0 },
+		"pos":   func(m models.Money) bool { return m > 0 },
+		"qpos":  func(q models.Qty) bool { return q > 0 },
 		"daysSince": func(s string) int {
 			t, err := time.ParseInLocation(models.DateLayout, s, models.Location())
 			if err != nil {
