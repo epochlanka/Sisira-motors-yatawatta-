@@ -1,0 +1,27 @@
+{{define "content"}}
+{{$l := .D.list}}
+{{template "reportnav"}}
+<div class="page-head"><div><h1>Jobs report</h1><p class="muted">{{date .D.from}} – {{date .D.to}} (by job date)</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/jobs">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="">Any</option>{{range .D.statuses}}<option{{if eq ($l.Get "status") .}} selected{{end}}>{{.}}</option>{{end}}</select></div>
+  <div class="field"><label for="f-assigned">Assigned</label><select id="f-assigned" name="assigned"><option value="">Anyone</option>{{range .D.users}}<option value="{{.ID}}"{{if eq ($l.Get "assigned") (printf "%d" .ID)}} selected{{end}}>{{.FullName}}</option>{{end}}</select></div>
+  <div class="field wide"><label for="f-q">Customer / registration</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Jobs opened (matching filter)</div><div class="value">{{.D.opened}}</div></div>
+  <div class="stat"><div class="label">Jobs completed in period</div><div class="value">{{.D.completed}}</div></div>
+  <div class="stat"><div class="label">Value of non-cancelled jobs</div><div class="value">{{money .D.value}}</div></div>
+</div>
+<section class="card"><h2>By current status</h2><div class="table-wrap"><table>
+  <thead><tr><th scope="col">Status</th><th scope="col" class="num">Jobs</th><th scope="col" class="num">Charges + parts</th></tr></thead>
+  <tbody>{{range .D.byStatus}}<tr><td>{{template "status" .Status}}</td><td class="num">{{.Count}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody></table></div></section>
+<section class="card"><h2>Jobs</h2>
+{{if .D.jobs}}<div class="table-wrap"><table>
+  <thead><tr>{{template "th" (dict "L" $l "K" "number" "T" "Job")}}{{template "th" (dict "L" $l "K" "date" "T" "Date")}}{{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}<th scope="col">Vehicle</th>{{template "th" (dict "L" $l "K" "status" "T" "Status")}}<th scope="col">Completed</th>{{template "th" (dict "L" $l "K" "assigned" "T" "Assigned")}}<th scope="col" class="num">Value</th><th scope="col">Invoice</th></tr></thead>
+  <tbody>{{range .D.jobs}}<tr><td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{.CustomerName}}</td><td>{{.VehicleReg}}</td><td>{{template "status" .Status}}</td><td>{{if .CompletedDate}}{{date .CompletedDate}}{{end}}</td><td>{{.AssignedName}}</td><td class="num">{{money .Total}}</td><td>{{.InvoiceNo}}</td></tr>{{end}}</tbody>
+</table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No jobs in this period.</strong></div>{{end}}
+</section>
+{{end}}

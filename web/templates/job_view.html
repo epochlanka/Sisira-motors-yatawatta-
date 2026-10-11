@@ -1,0 +1,192 @@
+{{define "content"}}
+{{$j := .D.j}}{{$locked := .D.locked}}{{$inv := .D.invoice}}
+{{$editCh := and (.Can "jobs.charges") (not $locked)}}{{$editPt := and (.Can "jobs.parts") (not $locked)}}
+<div class="page-head">
+  <div>
+    <p class="crumbs"><a href="/jobs">Jobs</a> /</p>
+    <h1>{{$j.JobNumber}} {{template "status" $j.Status}}</h1>
+    <p class="muted">{{date $j.JobDate}} · {{$j.CustomerName}}{{if $j.VehicleReg}} · {{$j.VehicleReg}} {{$j.VehicleDesc}}{{else}} · counter sale{{end}}</p>
+  </div>
+  <div class="actions">
+    {{if .CanAny "jobs.edit" "jobs.notes"}}<a class="btn btn-secondary" href="/jobs/{{$j.ID}}/edit">Edit details</a>{{end}}
+    {{if and (.Can "jobs.status") (not $inv)}}
+    <form method="post" action="/jobs/{{$j.ID}}/status" class="status-form" data-confirm="Change the job status? Cancelling a job returns all its parts to stock.">
+      {{template "csrf" .}}
+      <label for="f-status" class="sr-only">Job status</label>
+      <select id="f-status" name="status">{{range .D.statuses}}<option{{if eq . $j.Status}} selected{{end}}>{{.}}</option>{{end}}</select>
+      <button class="btn btn-secondary" type="submit">Set status</button>
+    </form>
+    {{end}}
+  </div>
+</div>
+
+<section class="card" aria-label="Totals and balance">
+  <div class="money-panel">
+    <div><div class="label">Labour &amp; charges</div><div class="value">{{money $j.ChargesTotal}}</div></div>
+    <div><div class="label">Parts</div><div class="value">{{money $j.PartsTotal}}</div></div>
+    {{if $inv}}
+      <div><div class="label">Invoice {{$inv.InvoiceNumber}}</div><div class="value">{{money $inv.Total}}</div></div>
+      <div class="paid"><div class="label">Paid</div><div class="value">{{money $inv.AmountPaid}}</div></div>
+      <div class="{{if pos $inv.Balance}}due{{else}}paid{{end}}"><div class="label">Balance</div><div class="value">{{money $inv.Balance}}</div></div>
+      <div><div class="label">Payment status</div><div class="value">{{template "status" $inv.PaymentStatus}}</div></div>
+    {{else}}
+      <div><div class="label">Job total{{if .Biz.TaxEnabled}} (before {{.Biz.TaxName}}){{end}}</div><div class="value">{{money $j.Total}}</div></div>
+      {{if .Biz.TaxEnabled}}<div><div class="label">Est. total incl. {{.Biz.TaxName}} {{.Biz.TaxRateLabel}}</div><div class="value">{{money .D.estTotal}}</div></div>{{end}}
+      <div><div class="label">Invoice</div><div class="value">Not invoiced</div></div>
+    {{end}}
+  </div>
+</section>
+
+{{if $inv}}<p class="notice">Invoice <a href="/invoices/{{$inv.ID}}">{{$inv.InvoiceNumber}}</a> has been issued. Charges and parts are locked so the invoice is not silently changed. {{if .Can "invoices.void"}}To correct it, void the invoice (with a reason) and create a new one.{{else}}Ask a manager to void it if a correction is needed.{{end}}</p>
+{{else if eq $j.Status "Cancelled"}}<p class="notice">This job is cancelled. Set its status back to Open to make changes.</p>{{end}}
+
+<div class="grid grid-2">
+<section class="card">
+  <h2>Details</h2>
+  <dl class="kv">
+    <dt>Customer</dt><dd>{{if .Can "customers.view"}}<a href="/customers/{{$j.CustomerID}}">{{$j.CustomerName}}</a>{{else}}{{$j.CustomerName}}{{end}} · {{$j.CustomerPhone}}</dd>
+    <dt>Vehicle</dt><dd>{{if $j.VehicleReg}}{{if .Can "customers.view"}}<a href="/vehicles/{{$j.VehicleID.Int64}}">{{$j.VehicleReg}}</a>{{else}}{{$j.VehicleReg}}{{end}} {{$j.VehicleDesc}}{{else}}None (counter sale){{end}}</dd>
+    <dt>Odometer</dt><dd>{{or (nullInt $j.Odometer) "–"}}</dd>
+    <dt>Assigned to</dt><dd>{{or $j.AssignedName "Not assigned"}}</dd>
+    {{if $j.CompletedDate}}<dt>Completed</dt><dd>{{date $j.CompletedDate}}</dd>{{end}}
+  </dl>
+</section>
+<section class="card">
+  <h2>Notes</h2>
+  <dl class="kv">
+    <dt>Reported issue</dt><dd class="pre">{{or $j.ReportedIssue "–"}}</dd>
+    <dt>Inspection</dt><dd class="pre">{{or $j.InspectionNotes "–"}}</dd>
+    <dt>Work performed</dt><dd class="pre">{{or $j.WorkPerformed "–"}}</dd>
+    <dt>Internal</dt><dd class="pre">{{or $j.InternalNotes "–"}}</dd>
+  </dl>
+</section>
+</div>
+
+<section class="card" id="charges">
+  <h2>Labour &amp; extra charges <span class="muted">{{money $j.ChargesTotal}}</span></h2>
+  {{if .D.charges}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Description</th><th scope="col" class="num">Qty / hrs</th><th scope="col" class="num">Unit price</th><th scope="col" class="num">Line total</th><th scope="col">Notes</th>{{if $editCh}}<th scope="col"><span class="sr-only">Actions</span></th>{{end}}</tr></thead>
+    <tbody>{{range .D.charges}}<tr>
+      {{if $editCh}}
+      <td><label class="sr-only" for="cd-{{.ID}}">Description</label><input class="w-desc" id="cd-{{.ID}}" form="ch-{{.ID}}" name="description" value="{{.Description}}" maxlength="200">
+        {{if .CategoryName}}<small>{{.CategoryName}}{{if .PriceOverridden}} · manual price{{end}}</small>{{end}}</td>
+      <td class="num"><label class="sr-only" for="cq-{{.ID}}">Quantity</label><input class="w-qty" id="cq-{{.ID}}" form="ch-{{.ID}}" name="quantity" value="{{qty .Quantity}}" inputmode="decimal" size="5"> <small>{{.Unit}}</small></td>
+      <td class="num"><label class="sr-only" for="cp-{{.ID}}">Unit price</label><input class="w-price" id="cp-{{.ID}}" form="ch-{{.ID}}" name="unit_price" value="{{moneyIn .UnitPrice}}" inputmode="decimal" size="8"></td>
+      <td class="num">{{money .LineTotal}}</td>
+      <td><label class="sr-only" for="cn-{{.ID}}">Notes</label><input class="w-note" id="cn-{{.ID}}" form="ch-{{.ID}}" name="notes" value="{{.Notes}}" maxlength="300"></td>
+      <td class="actions">
+        <form id="ch-{{.ID}}" method="post" action="/jobs/{{$j.ID}}/charges/{{.ID}}" class="inline">{{template "csrf" $}}<button class="btn btn-sm btn-secondary" type="submit">Save</button></form>
+        <form method="post" action="/jobs/{{$j.ID}}/charges/{{.ID}}/delete" class="inline" data-confirm="Remove this charge from the job?">{{template "csrf" $}}<button class="btn btn-sm btn-danger" type="submit">Remove</button></form>
+      </td>
+      {{else}}
+      <td>{{.Description}}{{if .PriceOverridden}} <small>(manual price)</small>{{end}}</td><td class="num">{{qty .Quantity}} {{.Unit}}</td>
+      <td class="num">{{money .UnitPrice}}</td><td class="num">{{money .LineTotal}}</td><td>{{.Notes}}</td>
+      {{end}}
+    </tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="3">Charges subtotal</td><td class="num">{{money $j.ChargesTotal}}</td><td colspan="{{if $editCh}}2{{else}}1{{end}}"></td></tr></tfoot>
+  </table></div>
+  {{else}}<div class="empty"><strong>No labour or extra charges yet.</strong>{{if $editCh}}Add one below.{{end}}</div>{{end}}
+  {{if $editCh}}
+  <form method="post" action="/jobs/{{$j.ID}}/charges" class="addrow" aria-label="Add a charge">
+    {{template "csrf" .}}
+    <div class="field"><label for="n-cat">Category</label>
+      <select id="n-cat" name="category_id" required data-charge-category>
+        {{range .D.categories}}<option value="{{.ID}}" data-price="{{money .DefaultPrice}}" data-unit="{{.Unit}}" data-custom="{{if .IsCustom}}1{{else}}0{{end}}">{{.Name}}{{if .DefaultPrice}} ({{money .DefaultPrice}}/{{.Unit}}){{end}}</option>{{end}}
+      </select></div>
+    <div class="field"><label for="n-desc">Description</label><input id="n-desc" name="description" maxlength="200"></div>
+    <div class="field"><label for="n-qty">Qty / hours</label><input id="n-qty" name="quantity" value="1" inputmode="decimal" required></div>
+    <div class="field"><label for="n-price">Unit price <small data-unit-label></small></label><input id="n-price" name="unit_price" inputmode="decimal" aria-describedby="n-price-h"><p class="hint" id="n-price-h">Blank = default price</p></div>
+    <div class="field"><label for="n-notes">Notes</label><input id="n-notes" name="notes" maxlength="300"></div>
+    <div class="field"><button class="btn" type="submit">Add charge</button></div>
+  </form>
+  {{end}}
+</section>
+
+<section class="card" id="parts">
+  <h2>Parts <span class="muted">{{money $j.PartsTotal}}</span></h2>
+  {{if .D.parts}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Part</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Unit price</th><th scope="col" class="num">Line total</th><th scope="col">Notes</th>{{if $editPt}}<th scope="col"><span class="sr-only">Actions</span></th>{{end}}</tr></thead>
+    <tbody>{{range .D.parts}}<tr>
+      <td class="w-part">{{if $.Can "parts.view"}}<a href="/parts/{{.PartID}}">{{.PartCode}}</a>{{else}}{{.PartCode}}{{end}} {{.Description}}{{if .PriceOverridden}} <small>(manual price)</small>{{end}}{{if $editPt}}<br><small>In stock now: {{qty .InStock}} {{.Unit}}</small>{{end}}</td>
+      {{if $editPt}}
+      <td class="num"><label class="sr-only" for="pq-{{.ID}}">Quantity</label><input class="w-qty" id="pq-{{.ID}}" form="pt-{{.ID}}" name="quantity" value="{{qty .Quantity}}" inputmode="decimal" size="5"> <small>{{.Unit}}</small></td>
+      <td class="num">{{if $.Can "jobs.price_override"}}<label class="sr-only" for="pp-{{.ID}}">Unit price</label><input class="w-price" id="pp-{{.ID}}" form="pt-{{.ID}}" name="unit_price" value="{{moneyIn .UnitPrice}}" inputmode="decimal" size="8">{{else}}{{money .UnitPrice}}{{end}}</td>
+      <td class="num">{{money .LineTotal}}</td>
+      <td><label class="sr-only" for="pn-{{.ID}}">Notes</label><input class="w-note" id="pn-{{.ID}}" form="pt-{{.ID}}" name="notes" value="{{.Notes}}" maxlength="300">
+        {{if $.Can "stock.negative"}}<label class="check"><input type="checkbox" form="pt-{{.ID}}" name="allow_negative" value="1"> Allow negative stock</label>{{end}}</td>
+      <td class="actions">
+        <form id="pt-{{.ID}}" method="post" action="/jobs/{{$j.ID}}/parts/{{.ID}}" class="inline">{{template "csrf" $}}<button class="btn btn-sm btn-secondary" type="submit">Save</button></form>
+        <form method="post" action="/jobs/{{$j.ID}}/parts/{{.ID}}/delete" class="inline" data-confirm="Remove this part from the job and return {{qty .Quantity}} {{.Unit}} to stock?">{{template "csrf" $}}<button class="btn btn-sm btn-danger" type="submit">Return</button></form>
+      </td>
+      {{else}}
+      <td class="num">{{qty .Quantity}} {{.Unit}}</td><td class="num">{{money .UnitPrice}}</td><td class="num">{{money .LineTotal}}</td><td>{{.Notes}}</td>
+      {{end}}
+    </tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="3">Parts subtotal</td><td class="num">{{money $j.PartsTotal}}</td><td colspan="{{if $editPt}}2{{else}}1{{end}}"></td></tr></tfoot>
+  </table></div>
+  {{else}}<div class="empty"><strong>No parts on this job.</strong>{{if $editPt}}Adding a part deducts it from stock immediately.{{end}}</div>{{end}}
+  {{if $editPt}}
+  {{template "partdatalist" .D.partOptions}}
+  <form method="post" action="/jobs/{{$j.ID}}/parts" class="addrow" aria-label="Add a part">
+    {{template "csrf" .}}
+    <div class="field"><label for="n-part">Part code</label><input id="n-part" name="part" list="parts-list" required autocomplete="off" data-part-picker="n-part-h" placeholder="Type code or name"><p class="hint" id="n-part-h" aria-live="polite"></p></div>
+    <div class="field"><label for="n-pqty">Quantity</label><input id="n-pqty" name="quantity" value="1" inputmode="decimal" required></div>
+    {{if .Can "jobs.price_override"}}<div class="field"><label for="n-pprice">Unit price</label><input id="n-pprice" name="unit_price" inputmode="decimal"><p class="hint">Blank = sale price</p></div>{{else}}<div></div>{{end}}
+    <div class="field"><label for="n-pnotes">Notes</label><input id="n-pnotes" name="notes" maxlength="300"></div>
+    <div class="field">{{if .Can "stock.negative"}}<label class="check"><input type="checkbox" name="allow_negative" value="1"> Allow negative stock</label>{{end}}</div>
+    <div class="field"><button class="btn" type="submit">Add part</button></div>
+  </form>
+  {{end}}
+</section>
+
+{{if .Can "invoices.view"}}
+<section class="card" id="invoice">
+  <h2>Invoice</h2>
+  {{if $inv}}
+    <p>Invoice <a href="/invoices/{{$inv.ID}}"><strong>{{$inv.InvoiceNumber}}</strong></a> issued {{date $inv.InvoiceDate}} for <strong>{{money $inv.Total}}</strong>.
+      Paid {{money $inv.AmountPaid}}, balance <strong>{{money $inv.Balance}}</strong> {{template "status" $inv.PaymentStatus}}</p>
+    <div class="form-actions">
+      <a class="btn" href="/invoices/{{$inv.ID}}">Open invoice{{if .Can "payments.record"}} / take payment{{end}}</a>
+      <a class="btn btn-secondary" href="/invoices/{{$inv.ID}}/print">Print bill</a>
+    </div>
+  {{else if and (eq $j.Status "Completed") (.Can "invoices.create")}}
+    <form method="post" action="/jobs/{{$j.ID}}/invoice" data-confirm="Create the invoice? Charges and parts will be locked.">
+      {{template "csrf" .}}
+      <table class="totals"><tbody>
+        <tr><td>Subtotal</td><td class="num">{{money $j.Total}}</td></tr>
+        {{if .Biz.TaxEnabled}}<tr><td>{{.Biz.TaxName}} {{.Biz.TaxRateLabel}} (before discount)</td><td class="num">{{money .D.estTax}}</td></tr>{{end}}
+      </tbody></table>
+      <div class="form-grid">
+        <div class="field"><label for="f-idate">Invoice date</label><input id="f-idate" type="date" name="invoice_date" value="{{.Today}}" required></div>
+        {{if .Biz.DiscountEnabled}}
+        <div class="field"><label for="f-disc">Discount amount</label><input id="f-disc" name="discount" inputmode="decimal" placeholder="0"></div>
+        <div class="field"><label for="f-dnote">Discount reason</label><input id="f-dnote" name="discount_note" maxlength="200"></div>
+        {{end}}
+        <div class="field full"><label for="f-inotes">Notes printed on invoice</label><input id="f-inotes" name="notes" maxlength="1000"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-ok" type="submit">Create invoice</button></div>
+    </form>
+  {{else}}
+    <p class="muted">{{if eq $j.Status "Completed"}}You do not have permission to create invoices.{{else}}Set the job status to <strong>Completed</strong> to create an invoice.{{end}}</p>
+  {{end}}
+  {{if gt (len .D.invoices) 1}}
+  <details><summary>Invoice history ({{len .D.invoices}})</summary>
+    <ul>{{range .D.invoices}}<li><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a> {{date .InvoiceDate}} {{money .Total}} {{if .IsVoid}}{{template "status" "Void"}} – {{.VoidReason}}{{else}}{{template "status" .PaymentStatus}}{{end}}</li>{{end}}</ul>
+  </details>
+  {{end}}
+</section>
+{{end}}
+
+{{with .D.movements}}
+<section class="card">
+  <details><summary>Stock movements for this job ({{len .}})</summary>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">When</th><th scope="col">Part</th><th scope="col">Type</th><th scope="col" class="num">Change</th><th scope="col" class="num">Balance after</th><th scope="col">By</th><th scope="col">Reference</th></tr></thead>
+    <tbody>{{range .}}<tr><td>{{datetime .CreatedAt}}</td><td>{{.PartCode}}</td><td>{{.TypeLabel}}</td><td class="num">{{.Quantity.Signed}}</td><td class="num">{{qty .BalanceAfter}}</td><td>{{.UserName}}</td><td>{{.Reason}}</td></tr>{{end}}</tbody>
+  </table></div>
+  </details>
+</section>
+{{end}}
+{{end}}

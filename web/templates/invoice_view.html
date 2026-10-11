@@ -1,0 +1,106 @@
+{{define "content"}}
+{{$i := .D.inv}}
+<div class="page-head">
+  <div>
+    <p class="crumbs"><a href="/invoices">Invoices</a> /</p>
+    <h1>Invoice {{$i.InvoiceNumber}} {{if $i.IsVoid}}{{template "status" "Void"}}{{else}}{{template "status" $i.PaymentStatus}}{{end}}</h1>
+    <p class="muted">{{date $i.InvoiceDate}} · Job <a href="/jobs/{{$i.JobID}}">{{$i.JobNumber}}</a> · created by {{$i.CreatedBy}} {{datetime $i.CreatedAt}}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/invoices/{{$i.ID}}/print">Print bill</a>
+  </div>
+</div>
+{{if $i.IsVoid}}<p class="flash flash-error">This invoice was voided {{datetime $i.VoidedAt}} by {{$i.VoidedBy}}. Reason: {{$i.VoidReason}}</p>{{end}}
+{{if $i.ReplacesNumber}}<p class="notice">This invoice replaces voided invoice <a href="/invoices/{{$i.ReplacesID.Int64}}">{{$i.ReplacesNumber}}</a>.</p>{{end}}
+
+<section class="card" aria-label="Balance">
+  <div class="money-panel">
+    <div><div class="label">Invoice total</div><div class="value">{{money $i.Total}}</div></div>
+    <div class="paid"><div class="label">Amount paid</div><div class="value">{{money $i.AmountPaid}}</div></div>
+    <div class="{{if pos $i.Balance}}due{{else}}paid{{end}}"><div class="label">{{if neg $i.Balance}}Overpaid{{else}}Outstanding balance{{end}}</div><div class="value">{{money $i.Balance}}</div></div>
+  </div>
+</section>
+
+<div class="grid grid-2">
+  <section class="card"><h2>Customer</h2>
+    <dl class="kv"><dt>Name</dt><dd><a href="/customers/{{$i.CustomerID}}">{{$i.CustomerName}}</a></dd><dt>Phone</dt><dd>{{$i.CustomerPhone}}</dd>
+    {{if $i.CustomerAddress}}<dt>Address</dt><dd class="pre">{{$i.CustomerAddress}}</dd>{{end}}</dl></section>
+  <section class="card"><h2>Vehicle</h2>
+    <dl class="kv"><dt>Registration</dt><dd>{{or $i.VehicleReg "–"}}</dd><dt>Vehicle</dt><dd>{{or $i.VehicleDesc "–"}}</dd><dt>Odometer</dt><dd>{{or (nullInt $i.Odometer) "–"}}</dd></dl></section>
+</div>
+
+<section class="card">
+  <h2>Items</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Description</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Unit price</th><th scope="col" class="num">Amount</th></tr></thead>
+    <tbody>{{range .D.lines}}<tr>
+      <td>{{if .PartCode}}<small>{{.PartCode}}</small> {{end}}{{.Description}}{{if .Notes}}<br><small>{{.Notes}}</small>{{end}}</td>
+      <td class="num">{{qty .Quantity}} {{.Unit}}</td><td class="num">{{money .UnitPrice}}</td><td class="num">{{money .LineTotal}}</td></tr>{{end}}</tbody>
+  </table></div>
+  <table class="totals"><tbody>
+    <tr><td>Subtotal</td><td class="num">{{money $i.Subtotal}}</td></tr>
+    {{if pos $i.Discount}}<tr><td>Discount{{with $i.DiscountNote}} ({{.}}){{end}}</td><td class="num">−{{money $i.Discount}}</td></tr>{{end}}
+    {{if $i.TaxName}}<tr><td>{{$i.TaxName}} {{$i.TaxRateLabel}}</td><td class="num">{{money $i.TaxAmount}}</td></tr>{{end}}
+    <tr class="grand"><td>Total</td><td class="num">{{money $i.Total}}</td></tr>
+    <tr><td>Paid</td><td class="num">{{money $i.AmountPaid}}</td></tr>
+    <tr><td><strong>Balance</strong></td><td class="num"><strong>{{money $i.Balance}}</strong></td></tr>
+  </tbody></table>
+  {{if $i.Notes}}<p><strong>Notes:</strong> {{$i.Notes}}</p>{{end}}
+</section>
+
+<section class="card" id="payment">
+  <h2>Payments</h2>
+  {{if .D.payments}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Receipt</th><th scope="col">Date</th><th scope="col">Method</th><th scope="col">Reference</th><th scope="col">Received by</th><th scope="col" class="num">Amount</th><th scope="col"></th></tr></thead>
+    <tbody>{{range .D.payments}}<tr{{if eq .Status "Void"}} class="void"{{end}}>
+      <td>{{.ReceiptNumber}}{{if .Overpayment}} <span class="badge badge-warn">Overpayment</span>{{end}}{{if eq .Status "Void"}} {{template "status" "Void"}}<br><small>{{.VoidReason}}</small>{{end}}</td>
+      <td>{{date .PaymentDate}}</td><td>{{.Method}}</td><td>{{.Reference}}{{if .Notes}}<br><small>{{.Notes}}</small>{{end}}</td><td>{{.ReceivedBy}}</td>
+      <td class="num">{{money .Amount}}</td>
+      <td class="actions">
+        {{if eq .Status "Valid"}}<a class="btn btn-sm btn-secondary" href="/payments/{{.ID}}/receipt">Receipt</a>
+        {{if $.Can "payments.void"}}
+        <details class="inline"><summary>Void</summary>
+          <form method="post" action="/payments/{{.ID}}/void" data-confirm="Void this payment? The invoice balance will increase.">
+            {{template "csrf" $}}<label for="vr-{{.ID}}">Reason</label><input id="vr-{{.ID}}" name="reason" required minlength="3" maxlength="300">
+            <button class="btn btn-sm btn-danger" type="submit">Void payment</button>
+          </form></details>
+        {{end}}{{end}}
+      </td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<div class="empty"><strong>No payments recorded yet.</strong></div>{{end}}
+
+  {{if and (not $i.IsVoid) (.Can "payments.record")}}
+  {{if or (pos $i.Balance) (.Can "payments.overpay")}}
+  <form method="post" action="/invoices/{{$i.ID}}/payments" class="stack" aria-label="Record a payment">
+    {{template "csrf" .}}
+    <h3>Record a payment</h3>
+    <div class="form-grid">
+      <div class="field"><label for="f-amount">Amount <span class="req" aria-hidden="true">*</span></label>
+        <input id="f-amount" name="amount" inputmode="decimal" required{{if pos $i.Balance}} value="{{moneyIn $i.Balance}}"{{end}}>
+        {{if pos $i.Balance}}<p class="hint">Outstanding: {{money $i.Balance}}. Enter less for a partial payment.</p>{{end}}</div>
+      <div class="field"><label for="f-pdate">Payment date</label><input id="f-pdate" type="date" name="payment_date" value="{{.Today}}" required></div>
+      <div class="field"><label for="f-method">Method</label><select id="f-method" name="method">{{range .D.methods}}<option>{{.}}</option>{{end}}</select></div>
+      <div class="field"><label for="f-ref">Reference (card slip, transfer ID, cheque no.)</label><input id="f-ref" name="reference" maxlength="100"></div>
+      <div class="field full"><label for="f-pnotes">Notes</label><input id="f-pnotes" name="notes" maxlength="500"></div>
+      {{if .Can "payments.overpay"}}<div class="field full"><label class="check"><input type="checkbox" name="allow_overpay" value="1"> Authorize an amount greater than the balance (administrator; a note is required and the action is audited)</label></div>{{end}}
+    </div>
+    <div class="form-actions"><button class="btn btn-ok" type="submit">Record payment</button></div>
+  </form>
+  {{else}}<p class="muted">This invoice is fully paid.</p>{{end}}
+  {{end}}
+</section>
+
+{{if and (not $i.IsVoid) (.Can "invoices.void")}}
+<section class="card">
+  <details><summary>Void invoice (correction)</summary>
+    <p>Voiding keeps this invoice in history, marks it void and unlocks the job so its charges and parts can be corrected. Then create a new invoice from the job. Any payments must be voided first.</p>
+    <form method="post" action="/invoices/{{$i.ID}}/void" data-confirm="Void invoice {{$i.InvoiceNumber}}? This cannot be undone.">
+      {{template "csrf" .}}
+      <div class="field"><label for="f-vreason">Reason <span class="req" aria-hidden="true">*</span></label><input id="f-vreason" name="reason" required minlength="3" maxlength="300"></div>
+      <button class="btn btn-danger" type="submit">Void invoice</button>
+    </form>
+  </details>
+</section>
+{{end}}
+{{end}}

@@ -1,0 +1,61 @@
+{{define "content"}}
+{{$p := .D.p}}{{$l := .D.list}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/parts">Parts</a> /</p>
+    <h1>{{$p.Code}} – {{$p.Name}} {{if not $p.Active}}<span class="badge badge-muted">Inactive</span>{{end}}</h1></div>
+  <div class="actions">
+    {{if .Can "parts.edit"}}
+      <a class="btn btn-secondary" href="/parts/{{$p.ID}}/edit">Edit</a>
+      <form method="post" action="/parts/{{$p.ID}}/active" class="inline"{{if $p.Active}} data-confirm="Deactivate this part? It will no longer be available for jobs and purchases."{{end}}>
+        {{template "csrf" .}}<input type="hidden" name="active" value="{{if $p.Active}}0{{else}}1{{end}}">
+        <button class="btn {{if $p.Active}}btn-danger{{else}}btn-secondary{{end}}" type="submit">{{if $p.Active}}Deactivate{{else}}Reactivate{{end}}</button>
+      </form>
+    {{end}}
+  </div>
+</div>
+<div class="stats">
+  <div class="stat{{if $p.Low}} alert{{end}}"><div class="label">In stock</div><div class="value">{{qty $p.QtyOnHand}} {{$p.Unit}}</div>{{if $p.Low}}<span class="badge badge-danger">At or below reorder level</span>{{end}}</div>
+  <div class="stat"><div class="label">Reorder level</div><div class="value">{{qty $p.ReorderLevel}}</div></div>
+  <div class="stat"><div class="label">Sale price</div><div class="value">{{money $p.SalePrice}}</div></div>
+  {{if .Can "reports.profit"}}<div class="stat"><div class="label">Purchase cost</div><div class="value">{{money $p.PurchaseCost}}</div></div>{{end}}
+</div>
+<div class="grid grid-2">
+  <section class="card"><h2>Details</h2>
+    <dl class="kv">
+      <dt>Category</dt><dd>{{or $p.Category "–"}}</dd><dt>Shelf</dt><dd>{{or $p.Location "–"}}</dd>
+      <dt>Compatible</dt><dd class="pre">{{or $p.Compatible "–"}}</dd><dt>Description</dt><dd class="pre">{{or $p.Description "–"}}</dd>
+    </dl>
+    {{if .Can "purchases.view"}}<p><a href="/purchases?part={{$p.Code}}">Purchase history for this part</a></p>{{end}}
+  </section>
+  {{if .Can "stock.adjust"}}
+  <section class="card" id="adjust"><h2>Stock adjustment</h2>
+    <form method="post" action="/parts/{{$p.ID}}/adjust" data-confirm="Record this stock adjustment?">
+      {{template "csrf" .}}
+      <fieldset><legend>Type</legend>
+        <label class="check"><input type="radio" name="mode" value="delta" checked> Add or remove a quantity (use a minus sign to remove, e.g. -2)</label>
+        <label class="check"><input type="radio" name="mode" value="count"> Set to counted quantity (stock-take)</label>
+      </fieldset>
+      <div class="form-grid">
+        <div class="field"><label for="f-aq">Quantity</label><input id="f-aq" name="quantity" inputmode="decimal" required></div>
+        <div class="field"><label for="f-ar">Reason <span class="req" aria-hidden="true">*</span></label><input id="f-ar" name="reason" required minlength="3" maxlength="300" placeholder="e.g. damaged, stock-take correction"></div>
+      </div>
+      {{if .Can "stock.negative"}}<label class="check"><input type="checkbox" name="allow_negative" value="1"> Authorize stock below zero</label>{{end}}
+      <div class="form-actions"><button class="btn" type="submit">Record adjustment</button></div>
+    </form>
+  </section>
+  {{end}}
+</div>
+<section class="card"><h2>Stock movement history</h2>
+  {{if .D.movements}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">When</th><th scope="col">Type</th><th scope="col" class="num">Change</th><th scope="col" class="num">Balance</th><th scope="col">Job / purchase</th><th scope="col">Reason / reference</th><th scope="col">By</th></tr></thead>
+    <tbody>{{range .D.movements}}<tr>
+      <td>{{datetime .CreatedAt}}</td><td>{{.TypeLabel}}{{if .NegativeOverride}} <span class="badge badge-warn">Negative override</span>{{end}}</td>
+      <td class="num">{{.Quantity.Signed}}</td><td class="num">{{qty .BalanceAfter}}</td>
+      <td>{{if .JobID.Valid}}<a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a>{{end}}{{if .PurchaseID.Valid}}<a href="/purchases/{{.PurchaseID.Int64}}">{{.PurchaseNumber}}</a>{{end}}</td>
+      <td>{{.Reason}}</td><td>{{.UserName}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+  {{else}}<div class="empty"><strong>No stock movements yet.</strong>Movements are recorded for opening stock, job usage, returns, purchases and adjustments.</div>{{end}}
+</section>
+{{end}}

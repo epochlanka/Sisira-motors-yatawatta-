@@ -1,0 +1,50 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · {{.Biz.BusinessName}}</title>
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+{{if .Session}}
+<header class="topbar">
+  <button class="nav-toggle" type="button" aria-controls="nav" aria-expanded="false" data-nav-toggle>☰<span class="sr-only"> Menu</span></button>
+  <a class="brand" href="/">{{.Biz.BusinessName}}</a>
+  <div class="userbox">
+    <span>{{.User.FullName}} <small>({{.User.RoleName}})</small></span>
+    <a href="/account/password">Password</a>
+    <form method="post" action="/logout" class="inline">{{template "csrf" .}}<button class="link" type="submit">Sign out</button></form>
+  </div>
+</header>
+<div class="shell">
+  <nav id="nav" class="sidenav" aria-label="Main navigation">
+    <ul>
+      {{if .Can "dashboard.view"}}<li><a href="/"{{if eq .Active "dashboard"}} aria-current="page"{{end}}>Dashboard</a></li>{{end}}
+      {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}<li><a href="/jobs"{{if eq .Active "jobs"}} aria-current="page"{{end}}>Jobs</a></li>{{end}}
+      {{if .Can "customers.view"}}<li><a href="/customers"{{if eq .Active "customers"}} aria-current="page"{{end}}>Customers</a></li>
+      <li><a href="/vehicles"{{if eq .Active "vehicles"}} aria-current="page"{{end}}>Vehicles</a></li>{{end}}
+      {{if .Can "invoices.view"}}<li><a href="/invoices"{{if eq .Active "invoices"}} aria-current="page"{{end}}>Invoices</a></li>{{end}}
+      {{if .Can "parts.view"}}<li><a href="/parts"{{if eq .Active "parts"}} aria-current="page"{{end}}>Parts</a></li>{{end}}
+      {{if .Can "purchases.view"}}<li><a href="/purchases"{{if eq .Active "purchases"}} aria-current="page"{{end}}>Purchases</a></li>{{end}}
+      {{if .Can "suppliers.view"}}<li><a href="/suppliers"{{if eq .Active "suppliers"}} aria-current="page"{{end}}>Suppliers</a></li>{{end}}
+      {{if .Can "reports.view"}}<li><a href="/reports"{{if eq .Active "reports"}} aria-current="page"{{end}}>Reports</a></li>{{end}}
+      {{if .CanAny "settings.manage" "users.manage" "audit.view"}}<li class="sep" aria-hidden="true"></li>
+      <li><a href="{{if .Can "settings.manage"}}/settings{{else if .Can "users.manage"}}/settings/users{{else}}/settings/audit{{end}}"{{if eq .Active "settings"}} aria-current="page"{{end}}>Settings</a></li>{{end}}
+    </ul>
+  </nav>
+  <main id="main" class="main">
+    {{template "flash" .}}
+    {{template "content" .}}
+  </main>
+</div>
+{{else}}
+<main id="main" class="main main-narrow">
+  {{template "flash" .}}
+  {{template "content" .}}
+</main>
+{{end}}
+</body>
+</html>{{end}}

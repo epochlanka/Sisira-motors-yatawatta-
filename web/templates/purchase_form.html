@@ -1,0 +1,19 @@
+{{define "content"}}
+{{$p := .D.pu}}
+<div class="page-head"><div><p class="crumbs"><a href="/purchases">Purchases</a> /</p><h1>{{.Title}}</h1></div></div>
+<div class="card">
+  {{if not .D.suppliers}}<p class="notice">No active suppliers. {{if .Can "suppliers.edit"}}<a href="/suppliers/new">Add a supplier first.</a>{{end}}</p>{{end}}
+  <form method="post" action="/purchases" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      <div class="field{{if .Errors.supplier_id}} has-error{{end}}"><label for="f-supplier_id">Supplier <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-supplier_id" name="supplier_id" required><option value="">Choose…</option>{{range .D.suppliers}}<option value="{{.ID}}"{{if eq $p.SupplierID .ID}} selected{{end}}>{{.Name}}</option>{{end}}</select>
+        {{template "ferr" (dict "P" . "F" "supplier_id")}}</div>
+      {{template "input" (dict "P" . "F" "purchase_date" "L" "Date" "V" $p.PurchaseDate "T" "date" "R" true)}}
+      {{template "input" (dict "P" . "F" "reference" "L" "Supplier invoice / reference" "V" $p.Reference "M" 100)}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $p.Notes "M" 2000)}}</div>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Create draft</button><a class="btn btn-secondary" href="/purchases">Cancel</a></div>
+  </form>
+</div>
+{{end}}

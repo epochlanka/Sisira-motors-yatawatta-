@@ -1,0 +1,32 @@
+{{define "standalone"}}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.D.pay.ReceiptNumber}} · {{.Biz.BusinessName}}</title>
+<link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
+<body>
+{{$p := .D.pay}}{{$i := .D.inv}}{{$b := .Biz}}
+<div class="print-toolbar no-print">
+  <button class="btn" type="button" data-print>Print receipt</button>
+  <a class="btn btn-secondary" href="/invoices/{{$i.ID}}">Back to invoice</a>
+</div>
+<main class="print-page bill receipt">
+  {{if eq $p.Status "Void"}}<div class="void-stamp">VOID</div>{{end}}
+  <header class="bill-head">
+    <div><h1>{{$b.BusinessName}}</h1>{{if $b.Address}}<div class="pre">{{$b.Address}}</div>{{end}}{{if $b.Phone}}<div>Tel: {{$b.Phone}}</div>{{end}}</div>
+    <div class="doc"><div class="title">RECEIPT</div><div>No: <strong>{{$p.ReceiptNumber}}</strong></div><div>Date: {{date $p.PaymentDate}}</div></div>
+  </header>
+  <dl class="kv">
+    <dt>Received from</dt><dd><strong>{{$i.CustomerName}}</strong></dd>
+    {{if $i.VehicleReg}}<dt>Vehicle</dt><dd>{{$i.VehicleReg}}</dd>{{end}}
+    <dt>For invoice</dt><dd>{{$i.InvoiceNumber}} ({{date $i.InvoiceDate}})</dd>
+    <dt>Amount</dt><dd><strong>{{money $p.Amount}}</strong></dd>
+    <dt>Method</dt><dd>{{$p.Method}}{{if $p.Reference}} · Ref {{$p.Reference}}{{end}}</dd>
+    <dt>Invoice total</dt><dd>{{money $i.Total}}</dd>
+    <dt>Total paid to date</dt><dd>{{money $i.AmountPaid}}</dd>
+    <dt>Balance remaining</dt><dd><strong>{{money $i.Balance}}</strong></dd>
+    <dt>Received by</dt><dd>{{$p.ReceivedBy}}</dd>
+  </dl>
+  <div class="sign"><div>Signature</div></div>
+  {{if $b.InvoiceFooter}}<footer class="bill-footer pre">{{$b.InvoiceFooter}}</footer>{{end}}
+</main>
+</body></html>{{end}}
+{{define "content"}}{{end}}

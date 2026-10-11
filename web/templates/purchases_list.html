@@ -1,0 +1,23 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><h1>Purchases</h1></div>
+  <div class="actions">{{if .Can "purchases.edit"}}<a class="btn" href="/purchases/new">+ New purchase</a>{{end}}</div></div>
+<form class="filters" method="get" action="/purchases" role="search">
+  <div class="field wide"><label for="f-q">Search number, reference, supplier</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-sup">Supplier</label><select id="f-sup" name="supplier_id"><option value="">All</option>{{range .D.suppliers}}<option value="{{.ID}}"{{if eq ($l.Get "supplier_id") (printf "%d" .ID)}} selected{{end}}>{{.Name}}</option>{{end}}</select></div>
+  <div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="">Any</option><option{{if eq ($l.Get "status") "Draft"}} selected{{end}}>Draft</option><option{{if eq ($l.Get "status") "Received"}} selected{{end}}>Received</option><option{{if eq ($l.Get "status") "Cancelled"}} selected{{end}}>Cancelled</option></select></div>
+  <div class="field"><label for="f-part">Part code</label><input id="f-part" name="part" value="{{$l.Get "part"}}"></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+</form>
+<div class="card">
+{{if .D.purchases}}
+  <div class="table-wrap"><table>
+    <thead><tr>{{template "th" (dict "L" $l "K" "number" "T" "Purchase")}}{{template "th" (dict "L" $l "K" "date" "T" "Date")}}{{template "th" (dict "L" $l "K" "supplier" "T" "Supplier")}}<th scope="col">Reference</th><th scope="col" class="num">Items</th>{{template "th" (dict "L" $l "K" "status" "T" "Status")}}{{template "th" (dict "L" $l "K" "total" "T" "Total" "C" "num")}}</tr></thead>
+    <tbody>{{range .D.purchases}}<tr><td><a href="/purchases/{{.ID}}">{{.PurchaseNumber}}</a></td><td>{{date .PurchaseDate}}</td><td>{{.SupplierName}}</td><td>{{.Reference}}</td><td class="num">{{.ItemCount}}</td><td>{{template "status" .Status}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="6">Total</td><td class="num">{{money .D.sum}}</td></tr></tfoot>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}<div class="empty"><strong>No purchases found.</strong>{{if .Can "purchases.edit"}}Record a supplier delivery with “New purchase”; stock increases when you mark it received.{{end}}</div>{{end}}
+</div>
+{{end}}

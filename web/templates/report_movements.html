@@ -1,0 +1,22 @@
+{{define "content"}}
+{{$l := .D.list}}
+{{template "reportnav"}}
+<div class="page-head"><div><h1>Stock movements report</h1><p class="muted">{{date .D.from}} – {{date .D.to}}</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/movements">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <div class="field"><label for="f-type">Type</label><select id="f-type" name="type"><option value="">All types</option>{{range .D.types}}<option value="{{.}}"{{if eq ($l.Get "type") .}} selected{{end}}>{{movementLabel .}}</option>{{end}}</select></div>
+  <div class="field"><label for="f-part">Part code</label><input id="f-part" name="part" value="{{$l.Get "part"}}"></div>
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<section class="card"><h2>Summary by type</h2>
+{{if .D.summary}}<table><thead><tr><th scope="col">Type</th><th scope="col" class="num">Movements</th><th scope="col" class="num">Qty in</th><th scope="col" class="num">Qty out</th></tr></thead>
+  <tbody>{{range .D.summary}}<tr><td>{{.Label}}</td><td class="num">{{.Count}}</td><td class="num">{{qty .In}}</td><td class="num">{{qty .Out}}</td></tr>{{end}}</tbody></table>{{else}}<p class="muted">No movements.</p>{{end}}</section>
+<section class="card"><h2>Movements</h2>
+{{if .D.movements}}<div class="table-wrap"><table>
+  <thead><tr>{{template "th" (dict "L" $l "K" "date" "T" "When")}}{{template "th" (dict "L" $l "K" "part" "T" "Part")}}<th scope="col">Type</th>{{template "th" (dict "L" $l "K" "qty" "T" "Change" "C" "num")}}<th scope="col" class="num">Balance</th><th scope="col">Job / purchase</th><th scope="col">Reason</th><th scope="col">By</th></tr></thead>
+  <tbody>{{range .D.movements}}<tr><td>{{datetime .CreatedAt}}</td><td><a href="/parts/{{.PartID}}">{{.PartCode}}</a> {{.PartName}}</td><td>{{.TypeLabel}}{{if .NegativeOverride}} <span class="badge badge-warn">Negative override</span>{{end}}</td><td class="num">{{.Quantity.Signed}}</td><td class="num">{{qty .BalanceAfter}}</td>
+    <td>{{if .JobID.Valid}}<a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a>{{end}}{{if .PurchaseID.Valid}}<a href="/purchases/{{.PurchaseID.Int64}}">{{.PurchaseNumber}}</a>{{end}}</td><td>{{.Reason}}</td><td>{{.UserName}}</td></tr>{{end}}</tbody>
+</table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No movements in this period.</strong></div>{{end}}
+</section>
+{{end}}

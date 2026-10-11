@@ -1,0 +1,42 @@
+{{define "content"}}
+{{$l := .D.list}}{{$t := .D.totals}}
+{{template "reportnav"}}
+<div class="page-head"><div><h1>Sales &amp; payments</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · void invoices and payments are excluded</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/sales">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <div class="field"><label for="f-pay">Payment status</label><select id="f-pay" name="pay"><option value="">Any</option><option{{if eq ($l.Get "pay") "Unpaid"}} selected{{end}}>Unpaid</option><option{{if eq ($l.Get "pay") "Partially Paid"}} selected{{end}}>Partially Paid</option><option{{if eq ($l.Get "pay") "Paid"}} selected{{end}}>Paid</option></select></div>
+  <div class="field wide"><label for="f-q">Customer / invoice</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Invoices issued</div><div class="value">{{$t.Count}}</div></div>
+  <div class="stat"><div class="label">Subtotal</div><div class="value">{{money $t.Subtotal}}</div></div>
+  <div class="stat"><div class="label">Discounts</div><div class="value">{{money $t.Discount}}</div></div>
+  <div class="stat"><div class="label">Tax</div><div class="value">{{money $t.Tax}}</div></div>
+  <div class="stat"><div class="label">Invoiced total</div><div class="value">{{money $t.Total}}</div></div>
+  <div class="stat"><div class="label">Payments received in period</div><div class="value">{{money .D.received}}</div></div>
+  <div class="stat"><div class="label">Still unpaid on these invoices</div><div class="value">{{money $t.Balance}}</div></div>
+</div>
+<div class="grid grid-2">
+<section class="card"><h2>Payments received by method</h2><table>
+  <tbody>{{range .D.methods}}<tr><td>{{.}}</td><td class="num">{{money (index $.D.byMethod .)}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td>Total</td><td class="num">{{money .D.received}}</td></tr></tfoot></table></section>
+<section class="card"><h2>Labour &amp; charges invoiced</h2>
+  {{if .D.chargeSales}}<table><thead><tr><th scope="col">Description</th><th scope="col" class="num">Lines</th><th scope="col" class="num">Amount</th></tr></thead>
+  <tbody>{{range .D.chargeSales}}<tr><td>{{.Status}}</td><td class="num">{{.Count}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody></table>{{else}}<p class="muted">None.</p>{{end}}</section>
+</div>
+<section class="card"><h2>Invoices</h2>
+{{if .D.invoices}}<div class="table-wrap"><table>
+  <thead><tr>{{template "th" (dict "L" $l "K" "number" "T" "Invoice")}}{{template "th" (dict "L" $l "K" "date" "T" "Date")}}{{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}<th scope="col">Status</th><th scope="col" class="num">Subtotal</th><th scope="col" class="num">Discount</th><th scope="col" class="num">Tax</th>{{template "th" (dict "L" $l "K" "total" "T" "Total" "C" "num")}}<th scope="col" class="num">Paid</th>{{template "th" (dict "L" $l "K" "balance" "T" "Balance" "C" "num")}}</tr></thead>
+  <tbody>{{range .D.invoices}}<tr><td><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a></td><td>{{date .InvoiceDate}}</td><td>{{.CustomerName}}</td><td>{{template "status" .PaymentStatus}}</td><td class="num">{{money .Subtotal}}</td><td class="num">{{money .Discount}}</td><td class="num">{{money .TaxAmount}}</td><td class="num">{{money .Total}}</td><td class="num">{{money .AmountPaid}}</td><td class="num">{{money .Balance}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td colspan="4">Totals</td><td class="num">{{money $t.Subtotal}}</td><td class="num">{{money $t.Discount}}</td><td class="num">{{money $t.Tax}}</td><td class="num">{{money $t.Total}}</td><td class="num">{{money $t.Paid}}</td><td class="num">{{money $t.Balance}}</td></tr></tfoot>
+</table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No invoices in this period.</strong></div>{{end}}
+</section>
+<section class="card"><h2>Payments received</h2>
+{{if .D.payments}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Receipt</th><th scope="col">Date</th><th scope="col">Invoice</th><th scope="col">Customer</th><th scope="col">Method</th><th scope="col">Received by</th><th scope="col" class="num">Amount</th></tr></thead>
+  <tbody>{{range .D.payments}}<tr><td>{{.ReceiptNumber}}</td><td>{{date .PaymentDate}}</td><td><a href="/invoices/{{.InvoiceID}}">{{.InvoiceNumber}}</a></td><td>{{.CustomerName}}</td><td>{{.Method}}</td><td>{{.ReceivedBy}}</td><td class="num">{{money .Amount}}</td></tr>{{end}}</tbody>
+</table></div>{{else}}<div class="empty"><strong>No payments in this period.</strong></div>{{end}}
+</section>
+{{end}}

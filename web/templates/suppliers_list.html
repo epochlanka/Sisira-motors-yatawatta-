@@ -1,0 +1,19 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><h1>Suppliers</h1></div>
+  <div class="actions">{{if .Can "suppliers.edit"}}<a class="btn" href="/suppliers/new">+ New supplier</a>{{end}}</div></div>
+<form class="filters" method="get" action="/suppliers" role="search">
+  <div class="field wide"><label for="f-q">Search name, contact, phone, email</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="">Active</option><option value="inactive"{{if eq ($l.Get "status") "inactive"}} selected{{end}}>Inactive</option><option value="all"{{if eq ($l.Get "status") "all"}} selected{{end}}>All</option></select></div>
+  <button class="btn btn-secondary" type="submit">Search</button>
+</form>
+<div class="card">
+{{if .D.suppliers}}
+  <div class="table-wrap"><table>
+    <thead><tr>{{template "th" (dict "L" $l "K" "name" "T" "Name")}}{{template "th" (dict "L" $l "K" "contact" "T" "Contact")}}<th scope="col">Phone</th><th scope="col">Email</th></tr></thead>
+    <tbody>{{range .D.suppliers}}<tr{{if not .Active}} class="inactive"{{end}}><td><a href="/suppliers/{{.ID}}">{{.Name}}</a></td><td>{{.ContactPerson}}</td><td>{{.Phone}}</td><td>{{.Email}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}<div class="empty"><strong>No suppliers yet.</strong>{{if .Can "suppliers.edit"}}Add one with “New supplier”.{{end}}</div>{{end}}
+</div>
+{{end}}

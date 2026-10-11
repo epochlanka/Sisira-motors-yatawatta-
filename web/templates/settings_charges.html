@@ -1,0 +1,31 @@
+{{define "content"}}
+<div class="page-head"><div><h1>Settings</h1></div></div>
+{{template "settingsnav" .}}
+<section class="card"><h2>Charge categories</h2>
+  <p class="hint">Changing a default price never changes prices already recorded on jobs or invoices. “Price per job” lets staff enter a price without the price-override permission. “Custom” requires a description on each line.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Order</th><th scope="col">Name</th><th scope="col">Default price</th><th scope="col">Unit</th><th scope="col">Price per job</th><th scope="col">Custom</th><th scope="col">Active</th><th scope="col"></th></tr></thead>
+    <tbody>{{range $i, $c := .D.cats}}<tr{{if not .Active}} class="inactive"{{end}}>
+      <td class="actions">
+        <form method="post" action="/settings/charges/{{.ID}}/move" class="inline">{{template "csrf" $}}<input type="hidden" name="dir" value="up"><button class="btn btn-sm btn-secondary" type="submit" aria-label="Move {{.Name}} up">↑</button></form>
+        <form method="post" action="/settings/charges/{{.ID}}/move" class="inline">{{template "csrf" $}}<input type="hidden" name="dir" value="down"><button class="btn btn-sm btn-secondary" type="submit" aria-label="Move {{.Name}} down">↓</button></form>
+      </td>
+      <td><label class="sr-only" for="cn-{{.ID}}">Name</label><input id="cn-{{.ID}}" form="cc-{{.ID}}" name="name" value="{{.Name}}" maxlength="80" required></td>
+      <td><label class="sr-only" for="cp-{{.ID}}">Default price</label><input id="cp-{{.ID}}" form="cc-{{.ID}}" name="default_price" value="{{moneyIn .DefaultPrice}}" inputmode="decimal" size="8"></td>
+      <td><label class="sr-only" for="cu-{{.ID}}">Unit</label><input id="cu-{{.ID}}" form="cc-{{.ID}}" name="unit" value="{{.Unit}}" maxlength="20" size="5"></td>
+      <td><input type="checkbox" form="cc-{{.ID}}" name="manual_price" value="1" aria-label="Price per job"{{if .ManualPrice}} checked{{end}}></td>
+      <td><input type="checkbox" form="cc-{{.ID}}" name="is_custom" value="1" aria-label="Custom"{{if .IsCustom}} checked{{end}}></td>
+      <td><input type="checkbox" form="cc-{{.ID}}" name="active" value="1" aria-label="Active"{{if .Active}} checked{{end}}></td>
+      <td class="actions"><form id="cc-{{.ID}}" method="post" action="/settings/charges/{{.ID}}" class="inline">{{template "csrf" $}}<button class="btn btn-sm" type="submit">Save</button></form></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  <form method="post" action="/settings/charges" class="addrow">{{template "csrf" .}}
+    <div class="field"><label for="n-name">New category</label><input id="n-name" name="name" required maxlength="80"></div>
+    <div class="field"><label for="n-price">Default price</label><input id="n-price" name="default_price" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label for="n-unit">Unit</label><input id="n-unit" name="unit" value="job" maxlength="20"></div>
+    <div class="field"><label class="check"><input type="checkbox" name="manual_price" value="1" checked> Price per job</label></div>
+    <div class="field"><label class="check"><input type="checkbox" name="is_custom" value="1"> Custom</label></div>
+    <div class="field"><button class="btn" type="submit">Add category</button></div>
+  </form>
+</section>
+{{end}}

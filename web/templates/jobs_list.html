@@ -1,0 +1,51 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head">
+  <div><h1>{{if .Can "jobs.view_all"}}Jobs{{else}}My assigned jobs{{end}}</h1></div>
+  <div class="actions">{{if .Can "jobs.create"}}<a class="btn" href="/jobs/new">+ Open job</a>{{end}}</div>
+</div>
+<form class="filters" method="get" action="/jobs" role="search">
+  <div class="field wide"><label for="f-q">Search job no., customer, phone, registration, issue</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-status">Status</label>
+    <select id="f-status" name="status">
+      <option value="">Any status</option>
+      <option value="active"{{if eq ($l.Get "status") "active"}} selected{{end}}>Open / in progress / waiting</option>
+      {{range .D.statuses}}<option{{if eq ($l.Get "status") .}} selected{{end}}>{{.}}</option>{{end}}
+    </select></div>
+  {{if .Can "jobs.view_all"}}<div class="field"><label for="f-assigned">Assigned to</label>
+    <select id="f-assigned" name="assigned"><option value="">Anyone</option>
+      {{range .D.users}}<option value="{{.ID}}"{{if eq ($l.Get "assigned") (printf "%d" .ID)}} selected{{end}}>{{.FullName}}</option>{{end}}
+    </select></div>{{end}}
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  {{if eq ($l.Get "uninvoiced") "1"}}<input type="hidden" name="uninvoiced" value="1">{{end}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+  <a class="btn btn-secondary" href="/jobs">Reset</a>
+</form>
+{{if eq ($l.Get "uninvoiced") "1"}}<p class="notice">Showing completed jobs that have not been invoiced.</p>{{end}}
+<div class="card">
+{{if .D.jobs}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "number" "T" "Job")}}
+      {{template "th" (dict "L" $l "K" "date" "T" "Date")}}
+      {{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}
+      {{template "th" (dict "L" $l "K" "reg" "T" "Vehicle")}}
+      <th scope="col">Issue</th>
+      {{template "th" (dict "L" $l "K" "status" "T" "Status")}}
+      {{template "th" (dict "L" $l "K" "assigned" "T" "Assigned")}}
+      <th scope="col" class="num">Value</th><th scope="col">Invoice</th>
+    </tr></thead>
+    <tbody>{{range .D.jobs}}<tr>
+      <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td>
+      <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td>
+      <td>{{if .VehicleReg}}{{.VehicleReg}}<br><small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
+      <td>{{.ReportedIssue}}</td><td>{{template "status" .Status}}</td><td>{{or .AssignedName "–"}}</td>
+      <td class="num">{{money .Total}}</td><td>{{or .InvoiceNo "–"}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty"><strong>No jobs found.</strong>{{if .Can "jobs.create"}}Use “Open job” to find a customer or vehicle and start a job.{{else}}Jobs assigned to you will appear here.{{end}}</div>
+{{end}}
+</div>
+{{end}}

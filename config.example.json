@@ -1,0 +1,20 @@
+{
+  "listen_addr": "127.0.0.1:8080",
+  "db_path": "data/garage.db",
+  "timezone": "Asia/Colombo",
+  "session_hours": 12,
+  "cookie_secure": false,
+  "tls_cert_file": "",
+  "tls_key_file": "",
+  "initial_business": {
+    "name": "Sisira Motors Yatawatta",
+    "address": "Yatawatta",
+    "phone": "",
+    "email": "",
+    "currency_code": "LKR",
+    "currency_symbol": "Rs.",
+    "currency_decimals": 2,
+    "invoice_prefix": "INV-",
+    "invoice_footer": "Thank you for your business."
+  }
+}

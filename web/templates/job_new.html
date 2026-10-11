@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="page-head"><div><p class="crumbs"><a href="/jobs">Jobs</a> /</p><h1>Open a job</h1>
+<p class="muted">Step 1: find the customer or vehicle.</p></div></div>
+<form class="filters" method="get" action="/jobs/new" role="search">
+  <div class="field wide"><label for="f-q">Registration number, customer name or phone</label><input id="f-q" type="search" name="q" value="{{.D.q}}" autofocus required></div>
+  <button class="btn" type="submit">Find</button>
+  {{if .Can "customers.edit"}}<a class="btn btn-secondary" href="/customers/new">+ New customer</a>{{end}}
+</form>
+{{if .D.q}}
+<div class="grid grid-2">
+  <section class="card">
+    <h2>Matching vehicles</h2>
+    {{if .D.vehicles}}
+    <div class="table-wrap"><table><tbody>{{range .D.vehicles}}<tr>
+      <td><strong>{{.Registration}}</strong><br><small>{{.Make}} {{.Model}}</small></td>
+      <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td>
+      <td class="actions"><a class="btn btn-sm" href="/jobs/new?customer_id={{.CustomerID}}&amp;vehicle_id={{.ID}}">Open job</a></td>
+    </tr>{{end}}</tbody></table></div>
+    {{else}}<div class="empty">No vehicles match.</div>{{end}}
+  </section>
+  <section class="card">
+    <h2>Matching customers</h2>
+    {{if .D.customers}}
+    <div class="table-wrap"><table><tbody>{{range .D.customers}}<tr>
+      <td><strong>{{.Name}}</strong><br><small>{{.Phone}} · {{.VehicleCount}} vehicle(s)</small></td>
+      <td class="actions"><a class="btn btn-sm" href="/jobs/new?customer_id={{.ID}}">Choose</a></td>
+    </tr>{{end}}</tbody></table></div>
+    {{else}}<div class="empty">No customers match.{{if .Can "customers.edit"}} <a href="/customers/new">Create a new customer.</a>{{end}}</div>{{end}}
+  </section>
+</div>
+{{end}}
+{{end}}

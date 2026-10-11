@@ -1,0 +1,31 @@
+{{define "content"}}
+{{$u := .D.u}}
+<div class="page-head"><div><p class="crumbs"><a href="/settings/users">Users</a> /</p><h1>{{.Title}}{{if $u.ID}}: {{$u.Username}}{{end}}</h1></div></div>
+<div class="card">
+  <form method="post" action="{{if $u.ID}}/settings/users/{{$u.ID}}{{else}}/settings/users{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{if not $u.ID}}{{template "input" (dict "P" . "F" "username" "L" "Username" "V" $u.Username "R" true "M" 40 "AC" "off" "H" "3-40 letters, digits, dot, dash, underscore")}}{{end}}
+      {{template "input" (dict "P" . "F" "full_name" "L" "Full name" "V" $u.FullName "R" true "M" 100)}}
+      <div class="field{{if .Errors.role_id}} has-error{{end}}"><label for="f-role_id">Role <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-role_id" name="role_id">{{range .D.roles}}<option value="{{.ID}}"{{if eq $u.RoleID .ID}} selected{{end}}>{{.Name}} – {{.Description}}</option>{{end}}</select>
+        {{template "ferr" (dict "P" . "F" "role_id")}}</div>
+      {{if $u.ID}}<div class="field{{if .Errors.active}} has-error{{end}}"><label class="check"><input type="checkbox" name="active" value="1"{{if $u.Active}} checked{{end}}> Active (can sign in)</label>{{template "ferr" (dict "P" . "F" "active")}}</div>
+      {{else}}
+      {{template "input" (dict "P" . "F" "password" "L" "Initial password" "T" "password" "R" true "AC" "new-password" "H" "At least 8 characters.")}}
+      <div class="field"><label class="check"><input type="checkbox" name="must_change_password" value="1"{{if $u.MustChangePassword}} checked{{end}}> Require a password change at first sign-in</label></div>
+      {{end}}
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Save user</button><a class="btn btn-secondary" href="/settings/users">Cancel</a></div>
+  </form>
+</div>
+{{if $u.ID}}
+<div class="card"><h2>Reset password</h2>
+  <form method="post" action="/settings/users/{{$u.ID}}/password" data-confirm="Reset this user's password? They will be signed out.">
+    {{template "csrf" .}}
+    <div class="field"><label for="f-rp">New temporary password</label><input id="f-rp" name="password" type="password" required minlength="8" autocomplete="new-password"><p class="hint">The user must change it at next sign-in.</p></div>
+    <button class="btn btn-danger" type="submit">Reset password</button>
+  </form>
+</div>
+{{end}}
+{{end}}

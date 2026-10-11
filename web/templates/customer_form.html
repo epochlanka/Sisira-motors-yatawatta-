@@ -1,0 +1,22 @@
+{{define "content"}}
+{{$c := .D.c}}
+<div class="page-head"><div>
+  <p class="crumbs"><a href="/customers">Customers</a> /{{if $c.ID}} <a href="/customers/{{$c.ID}}">{{$c.Name}}</a> /{{end}}</p>
+  <h1>{{.Title}}</h1></div></div>
+<div class="card">
+  <form method="post" action="{{if $c.ID}}/customers/{{$c.ID}}{{else}}/customers{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "name" "L" "Name" "V" $c.Name "R" true "M" 120 "AC" "off")}}
+      {{template "input" (dict "P" . "F" "phone" "L" "Phone number" "V" $c.Phone "T" "tel" "R" true "M" 40 "AC" "off")}}
+      {{template "input" (dict "P" . "F" "email" "L" "Email (optional)" "V" $c.Email "T" "email" "M" 120 "AC" "off")}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "address" "L" "Address" "V" $c.Address "M" 500)}}</div>
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $c.Notes "M" 2000)}}</div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" type="submit">Save customer</button>
+      <a class="btn btn-secondary" href="{{if $c.ID}}/customers/{{$c.ID}}{{else}}/customers{{end}}">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}

@@ -1,0 +1,17 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><h1>Settings</h1></div></div>
+{{template "settingsnav" .}}
+<form class="filters" method="get" action="/settings/audit" role="search">
+  <div class="field wide"><label for="f-q">Search user, action or details</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-entity">Record type</label><select id="f-entity" name="entity"><option value="">All</option>{{range .D.entities}}<option{{if eq ($l.Get "entity") .}} selected{{end}}>{{.}}</option>{{end}}</select></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+</form>
+<section class="card"><h2>Audit log</h2>
+{{if .D.entries}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">When</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Record</th><th scope="col">Details</th><th scope="col">IP</th></tr></thead>
+  <tbody>{{range .D.entries}}<tr><td>{{datetime .CreatedAt}}</td><td>{{.Username}}</td><td>{{.Action}}</td><td>{{.EntityType}} {{nullInt .EntityID}}</td><td>{{.Details}}</td><td>{{.IP}}</td></tr>{{end}}</tbody>
+</table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No entries match.</strong></div>{{end}}
+</section>
+{{end}}

@@ -1,0 +1,54 @@
+{{define "content"}}
+{{$p := .D.pu}}{{$draft := and (eq $p.Status "Draft") (.Can "purchases.edit")}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/purchases">Purchases</a> /</p>
+    <h1>{{$p.PurchaseNumber}} {{template "status" $p.Status}}</h1>
+    <p class="muted"><a href="/suppliers/{{$p.SupplierID}}">{{$p.SupplierName}}</a> · {{date $p.PurchaseDate}}{{if $p.Reference}} · Ref {{$p.Reference}}{{end}}</p></div>
+  <div class="actions">
+    {{if and (eq $p.Status "Draft") (.Can "purchases.receive")}}
+    <form method="post" action="/purchases/{{$p.ID}}/receive" class="inline" data-confirm="Mark as received? Stock will increase for every item.">{{template "csrf" .}}<button class="btn btn-ok" type="submit">Mark received</button></form>{{end}}
+  </div>
+</div>
+{{if eq $p.Status "Received"}}<p class="flash flash-success">Received {{datetime $p.ReceivedAt}} by {{$p.ReceivedBy}}. Stock was increased.</p>{{end}}
+{{if eq $p.Status "Cancelled"}}<p class="flash flash-error">Cancelled {{datetime $p.CancelledAt}}: {{$p.CancelReason}}</p>{{end}}
+{{if $draft}}
+<section class="card"><details><summary>Edit purchase details</summary>
+  <form method="post" action="/purchases/{{$p.ID}}">{{template "csrf" .}}
+    <div class="form-grid">
+      <div class="field"><label for="f-sup">Supplier</label><select id="f-sup" name="supplier_id">{{range .D.suppliers}}<option value="{{.ID}}"{{if eq $p.SupplierID .ID}} selected{{end}}>{{.Name}}</option>{{end}}</select></div>
+      <div class="field"><label for="f-date">Date</label><input id="f-date" type="date" name="purchase_date" value="{{$p.PurchaseDate}}" required></div>
+      <div class="field"><label for="f-ref">Reference</label><input id="f-ref" name="reference" value="{{$p.Reference}}" maxlength="100"></div>
+      <div class="field"><label for="f-notes">Notes</label><input id="f-notes" name="notes" value="{{$p.Notes}}" maxlength="2000"></div>
+    </div>
+    <button class="btn btn-secondary" type="submit">Save details</button>
+  </form></details></section>
+{{else if $p.Notes}}<section class="card"><p class="pre">{{$p.Notes}}</p></section>{{end}}
+<section class="card" id="items"><h2>Items <span class="muted">{{money $p.Total}}</span></h2>
+  {{if .D.items}}<div class="table-wrap"><table>
+    <thead><tr><th scope="col">Part</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Unit cost</th><th scope="col" class="num">Line total</th>{{if $draft}}<th scope="col"></th>{{end}}</tr></thead>
+    <tbody>{{range .D.items}}<tr><td><a href="/parts/{{.PartID}}">{{.PartCode}}</a> {{.PartName}}</td><td class="num">{{qty .Quantity}} {{.Unit}}</td><td class="num">{{money .UnitCost}}</td><td class="num">{{money .LineTotal}}</td>
+      {{if $draft}}<td class="actions"><form method="post" action="/purchases/{{$p.ID}}/items/{{.ID}}/delete" class="inline" data-confirm="Remove this item?">{{template "csrf" $}}<button class="btn btn-sm btn-danger" type="submit">Remove</button></form></td>{{end}}</tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="3">Total</td><td class="num">{{money $p.Total}}</td>{{if $draft}}<td></td>{{end}}</tr></tfoot>
+  </table></div>{{else}}<div class="empty"><strong>No items yet.</strong>{{if $draft}}Add the parts on the supplier’s invoice below.{{end}}</div>{{end}}
+  {{if $draft}}
+  {{template "partdatalist" .D.partOptions}}
+  <form method="post" action="/purchases/{{$p.ID}}/items" class="addrow">{{template "csrf" .}}
+    <div class="field"><label for="n-part">Part code</label><input id="n-part" name="part" list="parts-list" required autocomplete="off" data-part-picker="n-part-h"><p class="hint" id="n-part-h" aria-live="polite"></p></div>
+    <div class="field"><label for="n-qty">Quantity</label><input id="n-qty" name="quantity" inputmode="decimal" required></div>
+    <div class="field"><label for="n-cost">Unit cost</label><input id="n-cost" name="unit_cost" inputmode="decimal"><p class="hint">Blank = last cost</p></div>
+    <div></div><div></div>
+    <div class="field"><button class="btn" type="submit">Add item</button></div>
+  </form>{{end}}
+</section>
+{{with .D.movements}}<section class="card"><h2>Stock movements</h2><div class="table-wrap"><table>
+  <thead><tr><th scope="col">When</th><th scope="col">Part</th><th scope="col">Type</th><th scope="col" class="num">Change</th><th scope="col" class="num">Balance</th><th scope="col">By</th></tr></thead>
+  <tbody>{{range .}}<tr><td>{{datetime .CreatedAt}}</td><td>{{.PartCode}}</td><td>{{.TypeLabel}}</td><td class="num">{{.Quantity.Signed}}</td><td class="num">{{qty .BalanceAfter}}</td><td>{{.UserName}}</td></tr>{{end}}</tbody></table></div></section>{{end}}
+{{if and (ne $p.Status "Cancelled") (.Can "purchases.receive")}}
+<section class="card"><details><summary>Cancel purchase</summary>
+  <p>{{if eq $p.Status "Received"}}Cancelling a received purchase removes its quantities from stock and records reversal movements.{{else}}Cancelling a draft does not change stock.{{end}}</p>
+  <form method="post" action="/purchases/{{$p.ID}}/cancel" data-confirm="Cancel this purchase?">{{template "csrf" .}}
+    <div class="field"><label for="f-cr">Reason</label><input id="f-cr" name="reason" required minlength="3" maxlength="300"></div>
+    {{if .Can "stock.negative"}}<label class="check"><input type="checkbox" name="allow_negative" value="1"> Authorize stock below zero</label>{{end}}
+    <button class="btn btn-danger" type="submit">Cancel purchase</button>
+  </form></details></section>{{end}}
+{{end}}

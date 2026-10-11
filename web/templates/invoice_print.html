@@ -1,0 +1,56 @@
+{{define "standalone"}}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.D.inv.InvoiceNumber}} · {{.Biz.BusinessName}}</title>
+<link rel="stylesheet" href="/static/app.css"><script src="/static/app.js" defer></script></head>
+<body>
+{{$i := .D.inv}}{{$b := .Biz}}
+<div class="print-toolbar no-print">
+  <button class="btn" type="button" data-print>Print</button>
+  <a class="btn btn-secondary" href="/invoices/{{$i.ID}}">Back to invoice</a>
+</div>
+<main class="print-page bill">
+  {{if $i.IsVoid}}<div class="void-stamp">VOID</div>{{end}}
+  <header class="bill-head">
+    <div>
+      <h1>{{$b.BusinessName}}</h1>
+      {{if $b.Address}}<div class="pre">{{$b.Address}}</div>{{end}}
+      {{if $b.Phone}}<div>Tel: {{$b.Phone}}</div>{{end}}
+      {{if $b.Email}}<div>{{$b.Email}}</div>{{end}}
+      {{if $b.RegistrationNo}}<div>Reg. No: {{$b.RegistrationNo}}</div>{{end}}
+      {{if and $i.TaxName $b.TaxNumber}}<div>{{$i.TaxName}} No: {{$b.TaxNumber}}</div>{{end}}
+    </div>
+    <div class="doc">
+      <div class="title">{{if $i.TaxName}}TAX INVOICE{{else}}INVOICE{{end}}</div>
+      <div>No: <strong>{{$i.InvoiceNumber}}</strong></div>
+      <div>Date: {{date $i.InvoiceDate}}</div>
+      <div>Job: {{$i.JobNumber}}</div>
+    </div>
+  </header>
+  <section class="bill-parties">
+    <div><h3>Bill to</h3><strong>{{$i.CustomerName}}</strong>{{if $i.CustomerPhone}}<br>{{$i.CustomerPhone}}{{end}}{{if $i.CustomerAddress}}<div class="pre">{{$i.CustomerAddress}}</div>{{end}}</div>
+    <div><h3>Vehicle</h3>{{if $i.VehicleReg}}<strong>{{$i.VehicleReg}}</strong>{{if $i.VehicleDesc}}<br>{{$i.VehicleDesc}}{{end}}{{if $i.Odometer.Valid}}<br>Odometer: {{nullInt $i.Odometer}}{{end}}{{else}}Counter sale{{end}}</div>
+  </section>
+  <table>
+    <thead><tr><th scope="col">#</th><th scope="col">Description</th><th scope="col" class="num">Qty</th><th scope="col" class="num">Unit price</th><th scope="col" class="num">Amount</th></tr></thead>
+    <tbody>
+      {{if .D.charges}}<tr class="section-row"><td colspan="5">Labour &amp; services</td></tr>{{end}}
+      {{range $n, $l := .D.charges}}<tr><td>{{add $n 1}}</td><td>{{$l.Description}}{{if $l.Notes}} – <small>{{$l.Notes}}</small>{{end}}</td><td class="num">{{qty $l.Quantity}} {{$l.Unit}}</td><td class="num">{{$l.UnitPrice.Plain}}</td><td class="num">{{$l.LineTotal.Plain}}</td></tr>{{end}}
+      {{if .D.parts}}<tr class="section-row"><td colspan="5">Parts</td></tr>{{end}}
+      {{range $n, $l := .D.parts}}<tr><td>{{add $n 1}}</td><td>{{$l.Description}} <small>({{$l.PartCode}})</small></td><td class="num">{{qty $l.Quantity}} {{$l.Unit}}</td><td class="num">{{$l.UnitPrice.Plain}}</td><td class="num">{{$l.LineTotal.Plain}}</td></tr>{{end}}
+    </tbody>
+  </table>
+  <table class="totals"><tbody>
+    <tr><td>Subtotal</td><td class="num">{{money $i.Subtotal}}</td></tr>
+    {{if pos $i.Discount}}<tr><td>Discount{{with $i.DiscountNote}} ({{.}}){{end}}</td><td class="num">−{{money $i.Discount}}</td></tr>{{end}}
+    {{if $i.TaxName}}<tr><td>{{$i.TaxName}} {{$i.TaxRateLabel}}</td><td class="num">{{money $i.TaxAmount}}</td></tr>{{end}}
+    <tr class="grand"><td>TOTAL</td><td class="num">{{money $i.Total}}</td></tr>
+    {{range .D.payments}}<tr><td>Paid {{date .PaymentDate}} ({{.Method}}, {{.ReceiptNumber}})</td><td class="num">{{money .Amount}}</td></tr>{{end}}
+    <tr><td><strong>{{if neg $i.Balance}}Overpaid{{else}}Balance due{{end}}</strong></td><td class="num"><strong>{{money $i.Balance}}</strong></td></tr>
+    <tr><td>Payment status</td><td class="num">{{$i.PaymentStatus}}</td></tr>
+  </tbody></table>
+  {{if $i.Notes}}<p><strong>Notes:</strong> {{$i.Notes}}</p>{{end}}
+  <div class="sign"><div>Customer signature</div><div>For {{$b.BusinessName}}</div></div>
+  {{if $b.InvoiceFooter}}<footer class="bill-footer pre">{{$b.InvoiceFooter}}</footer>{{end}}
+</main>
+</body></html>{{end}}
+{{define "content"}}{{end}}

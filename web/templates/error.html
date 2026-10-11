@@ -1,0 +1,7 @@
+{{define "content"}}
+<div class="card">
+  <h1>{{if eq .D.code 404}}Not found{{else if eq .D.code 403}}Access denied{{else if eq .D.code 400}}Action not allowed{{else}}Error{{end}}</h1>
+  <p>{{.D.message}}</p>
+  <p><a href="/">Return to the start page</a>{{if .Session}}{{else}} · <a href="/login">Sign in</a>{{end}}</p>
+</div>
+{{end}}

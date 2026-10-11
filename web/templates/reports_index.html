@@ -1,0 +1,13 @@
+{{define "content"}}
+<div class="page-head"><div><h1>Reports</h1><p class="muted">All reports can be filtered by date and printed with your browser.</p></div></div>
+<div class="grid grid-3">
+  {{if .Can "jobs.view_all"}}<a class="stat" href="/reports/jobs"><div class="value">Jobs</div><div class="label">Jobs opened and completed by status, staff and date</div></a>{{end}}
+  {{if .Can "invoices.view"}}<a class="stat" href="/reports/sales"><div class="value">Sales &amp; payments</div><div class="label">Invoice totals, tax, discounts and payments received by method</div></a>
+  <a class="stat" href="/reports/outstanding"><div class="value">Outstanding</div><div class="label">Unpaid and partially paid invoices with age</div></a>{{end}}
+  {{if .Can "parts.view"}}<a class="stat" href="/reports/parts-sold"><div class="value">Parts sold</div><div class="label">Quantities and revenue from invoiced parts{{if .Can "reports.profit"}}, with cost-based margin{{end}}</div></a>
+  <a class="stat" href="/reports/stock"><div class="value">Stock levels</div><div class="label">Current stock{{if .Can "reports.profit"}} and stock value{{end}}</div></a>
+  <a class="stat" href="/reports/stock?low=1"><div class="value">Low stock</div><div class="label">Parts at or below their reorder level</div></a>
+  <a class="stat" href="/reports/movements"><div class="value">Stock movements</div><div class="label">Issues, returns, receipts and adjustments</div></a>{{end}}
+  {{if .Can "purchases.view"}}<a class="stat" href="/reports/purchases"><div class="value">Purchases</div><div class="label">Purchases by supplier, date and part</div></a>{{end}}
+</div>
+{{end}}

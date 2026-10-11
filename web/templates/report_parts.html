@@ -1,0 +1,25 @@
+{{define "content"}}
+{{template "reportnav"}}
+{{$profit := .Can "reports.profit"}}
+<div class="page-head"><div><h1>Parts sold</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · parts on issued (non-void) invoices, by invoice date</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/parts-sold">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <div class="field"><label for="f-part">Part code</label><input id="f-part" name="part" value="{{.D.part}}"></div>
+  <div class="field"><label for="f-cat">Category</label><select id="f-cat" name="category"><option value="">All</option>{{range .D.categories}}<option{{if eq $.D.category .}} selected{{end}}>{{.}}</option>{{end}}</select></div>
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Parts revenue</div><div class="value">{{money .D.revenue}}</div></div>
+  {{if $profit}}<div class="stat"><div class="label">Recorded purchase cost</div><div class="value">{{money .D.cost}}</div></div>
+  <div class="stat"><div class="label">Gross margin*</div><div class="value">{{money .D.margin}}</div></div>{{end}}
+</div>
+{{if $profit}}<p class="hint">* Gross margin = invoiced part revenue − (quantity × the part’s recorded purchase cost at the time it was added to the job). Before discounts and tax; labour is not included. Parts with no recorded cost show full revenue as margin.</p>{{end}}
+<section class="card">
+{{if .D.rows}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Code</th><th scope="col">Part</th><th scope="col" class="num">Qty sold</th><th scope="col" class="num">Revenue</th>{{if $profit}}<th scope="col" class="num">Cost</th><th scope="col" class="num">Margin*</th>{{end}}<th scope="col" class="num">In stock now</th></tr></thead>
+  <tbody>{{range .D.rows}}<tr><td>{{if .PartID}}<a href="/parts/{{.PartID}}">{{.Code}}</a>{{else}}{{.Code}}{{end}}</td><td>{{.Description}}</td><td class="num">{{qty .Qty}} {{.Unit}}</td><td class="num">{{money .Revenue}}</td>{{if $profit}}<td class="num">{{money .Cost}}</td><td class="num">{{money .Margin}}</td>{{end}}<td class="num">{{qty .InStock}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td colspan="3">Totals</td><td class="num">{{money .D.revenue}}</td>{{if $profit}}<td class="num">{{money .D.cost}}</td><td class="num">{{money .D.margin}}</td>{{end}}<td></td></tr></tfoot>
+</table></div>{{else}}<div class="empty"><strong>No parts invoiced in this period.</strong></div>{{end}}
+</section>
+{{end}}

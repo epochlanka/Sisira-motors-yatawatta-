@@ -1,0 +1,50 @@
+{{define "content"}}
+{{$s := .D.s}}
+<div class="page-head"><div><h1>Settings</h1></div></div>
+{{template "settingsnav" .}}
+<form method="post" action="/settings" novalidate>
+  {{template "csrf" .}}
+  <section class="card"><h2>Business details (printed on bills)</h2>
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "business_name" "L" "Business name" "V" $s.BusinessName "R" true "M" 120)}}
+      {{template "input" (dict "P" . "F" "phone" "L" "Phone" "V" $s.Phone "M" 80)}}
+      {{template "input" (dict "P" . "F" "email" "L" "Email" "V" $s.Email "T" "email" "M" 120)}}
+      {{template "input" (dict "P" . "F" "registration_no" "L" "Business registration no." "V" $s.RegistrationNo "M" 60)}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "address" "L" "Address" "V" $s.Address "M" 300)}}</div>
+    </div>
+  </section>
+  <section class="card"><h2>Currency &amp; dates</h2>
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "currency_code" "L" "Currency code" "V" $s.CurrencyCode "R" true "M" 3 "H" "ISO code, e.g. LKR")}}
+      {{template "input" (dict "P" . "F" "currency_symbol" "L" "Currency symbol" "V" $s.CurrencySymbol "M" 8 "H" "e.g. Rs.")}}
+      {{template "input" (dict "P" . "F" "currency_decimals" "L" "Decimal places" "V" $s.CurrencyDecimals "IM" "numeric" "H" "Cannot be changed once prices exist.")}}
+      <div class="field"><label class="check"><input type="checkbox" name="symbol_after" value="1"{{if $s.SymbolAfter}} checked{{end}}> Show symbol after the amount</label></div>
+      <div class="field{{if .Errors.date_format}} has-error{{end}}"><label for="f-date_format">Date format</label>
+        <select id="f-date_format" name="date_format">{{range .D.formats}}<option value="{{.Layout}}"{{if eq $s.DateFormat .Layout}} selected{{end}}>{{.Example}}</option>{{end}}</select>
+        {{template "ferr" (dict "P" . "F" "date_format")}}</div>
+    </div>
+  </section>
+  <section class="card"><h2>Tax &amp; discounts</h2>
+    <div class="form-grid">
+      <div class="field full"><label class="check"><input type="checkbox" name="tax_enabled" value="1"{{if $s.TaxEnabled}} checked{{end}}> Charge tax on invoices (added on top of the subtotal after discount)</label></div>
+      {{template "input" (dict "P" . "F" "tax_name" "L" "Tax name" "V" $s.TaxName "M" 20 "H" "e.g. VAT")}}
+      {{template "input" (dict "P" . "F" "tax_rate" "L" "Tax rate (%)" "V" $s.TaxRateLabel "IM" "decimal" "H" "Up to 2 decimals, e.g. 18")}}
+      {{template "input" (dict "P" . "F" "tax_number" "L" "Tax registration number" "V" $s.TaxNumber "M" 60)}}
+      <div class="field"><label class="check"><input type="checkbox" name="discount_enabled" value="1"{{if $s.DiscountEnabled}} checked{{end}}> Allow discounts on invoices</label></div>
+    </div>
+    <p class="hint">Changes apply to new invoices only. Issued invoices keep the tax rate they were created with.</p>
+  </section>
+  <section class="card"><h2>Numbering</h2>
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "invoice_prefix" "L" "Invoice prefix" "V" $s.InvoicePrefix "M" 12)}}
+      {{template "input" (dict "P" . "F" "invoice_next" "L" "Next invoice number" "V" $s.InvoiceNext "IM" "numeric")}}
+      {{template "input" (dict "P" . "F" "invoice_pad" "L" "Digits (zero-padded)" "V" $s.InvoicePad "IM" "numeric" "H" "Also used for receipt numbers.")}}
+      {{template "input" (dict "P" . "F" "receipt_prefix" "L" "Receipt prefix" "V" $s.ReceiptPrefix "M" 12)}}
+      {{template "input" (dict "P" . "F" "job_prefix" "L" "Job number prefix" "V" $s.JobPrefix "M" 12)}}
+      {{template "input" (dict "P" . "F" "purchase_prefix" "L" "Purchase number prefix" "V" $s.PurchasePrefix "M" 12)}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "invoice_footer" "L" "Footer message on bills and receipts" "V" $s.InvoiceFooter "M" 500)}}</div>
+    </div>
+  </section>
+  <div class="form-actions"><button class="btn" type="submit">Save settings</button></div>
+</form>
+{{end}}

@@ -1,0 +1,41 @@
+{{define "content"}}
+{{$v := .D.v}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/vehicles">Vehicles</a> /</p>
+    <h1>{{$v.Registration}} {{if $v.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1>
+    <p class="muted">{{$v.Make}} {{$v.Model}} {{nullInt $v.Year}}</p></div>
+  <div class="actions">
+    {{if and (.Can "jobs.create") (not $v.Archived)}}<a class="btn" href="/jobs/new?customer_id={{$v.CustomerID}}&amp;vehicle_id={{$v.ID}}">+ Open job</a>{{end}}
+    {{if .Can "customers.edit"}}
+      <a class="btn btn-secondary" href="/vehicles/{{$v.ID}}/edit">Edit</a>
+      <form method="post" action="/vehicles/{{$v.ID}}/archive" class="inline" {{if not $v.Archived}}data-confirm="Archive this vehicle? Its job history is kept."{{end}}>
+        {{template "csrf" .}}<input type="hidden" name="archived" value="{{if $v.Archived}}0{{else}}1{{end}}">
+        <button class="btn {{if $v.Archived}}btn-secondary{{else}}btn-danger{{end}}" type="submit">{{if $v.Archived}}Restore{{else}}Archive{{end}}</button>
+      </form>
+    {{end}}
+  </div>
+</div>
+<section class="card">
+  <dl class="kv">
+    <dt>Owner</dt><dd><a href="/customers/{{$v.CustomerID}}">{{$v.CustomerName}}</a> · {{$v.CustomerPhone}}</dd>
+    <dt>Make / model</dt><dd>{{or $v.Make "–"}} {{$v.Model}}</dd>
+    <dt>Year</dt><dd>{{or (nullInt $v.Year) "–"}}</dd>
+    <dt>VIN / chassis</dt><dd>{{or $v.VIN "–"}}</dd>
+    <dt>Notes</dt><dd class="pre">{{or $v.Notes "–"}}</dd>
+  </dl>
+</section>
+{{if .Can "jobs.view_all"}}
+<section class="card">
+  <h2>Service history</h2>
+  {{if .D.jobs}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Job</th><th scope="col">Date</th><th scope="col" class="num">Odometer</th><th scope="col">Issue / work</th><th scope="col">Status</th><th scope="col" class="num">Value</th></tr></thead>
+    <tbody>{{range .D.jobs}}<tr>
+      <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td class="num">{{nullInt .Odometer}}</td>
+      <td>{{.ReportedIssue}}{{if .WorkPerformed}}<br><small class="pre">{{.WorkPerformed}}</small>{{end}}</td>
+      <td>{{template "status" .Status}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<div class="empty"><strong>No jobs recorded for this vehicle yet.</strong></div>{{end}}
+</section>
+{{end}}
+{{end}}

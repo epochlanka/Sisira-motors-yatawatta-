@@ -1,0 +1,45 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head">
+  <div><h1>Parts &amp; stock</h1></div>
+  <div class="actions">
+    <a class="btn btn-secondary" href="/stock-movements">Stock movements</a>
+    {{if .Can "parts.edit"}}<a class="btn" href="/parts/new">+ New part</a>{{end}}
+  </div>
+</div>
+<form class="filters" method="get" action="/parts" role="search">
+  <div class="field wide"><label for="f-q">Search code, name, description, compatibility, shelf</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-cat">Category</label><select id="f-cat" name="category"><option value="">All categories</option>{{range .D.categories}}<option{{if eq ($l.Get "category") .}} selected{{end}}>{{.}}</option>{{end}}</select></div>
+  <div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="">Active</option><option value="inactive"{{if eq ($l.Get "status") "inactive"}} selected{{end}}>Inactive</option><option value="all"{{if eq ($l.Get "status") "all"}} selected{{end}}>All</option></select></div>
+  <div class="field"><label class="check"><input type="checkbox" name="low" value="1"{{if eq ($l.Get "low") "1"}} checked{{end}}> Low stock only</label></div>
+  <button class="btn btn-secondary" type="submit">Filter</button>
+  <a class="btn btn-secondary" href="/parts">Reset</a>
+</form>
+<div class="card">
+{{if .D.parts}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "code" "T" "Code")}}
+      {{template "th" (dict "L" $l "K" "name" "T" "Name")}}
+      {{template "th" (dict "L" $l "K" "category" "T" "Category")}}
+      {{template "th" (dict "L" $l "K" "location" "T" "Shelf")}}
+      {{template "th" (dict "L" $l "K" "stock" "T" "In stock" "C" "num")}}
+      <th scope="col" class="num">Reorder at</th>
+      {{template "th" (dict "L" $l "K" "price" "T" "Sale price" "C" "num")}}
+      {{if .Can "reports.profit"}}<th scope="col" class="num">Cost</th>{{end}}
+    </tr></thead>
+    <tbody>{{range .D.parts}}<tr{{if not .Active}} class="inactive"{{end}}>
+      <td><a href="/parts/{{.ID}}">{{.Code}}</a></td>
+      <td>{{.Name}}{{if .Compatible}}<br><small>{{.Compatible}}</small>{{end}}{{if not .Active}} <span class="badge badge-muted">Inactive</span>{{end}}</td>
+      <td>{{.Category}}</td><td>{{.Location}}</td>
+      <td class="num">{{qty .QtyOnHand}} {{.Unit}} {{if .Low}}<span class="badge badge-danger">Low</span>{{end}}</td>
+      <td class="num">{{qty .ReorderLevel}}</td><td class="num">{{money .SalePrice}}</td>
+      {{if $.Can "reports.profit"}}<td class="num">{{money .PurchaseCost}}</td>{{end}}
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty">{{if or ($l.Get "q") ($l.Get "low") ($l.Get "category")}}<strong>No parts match the filter.</strong>{{else}}<strong>No parts yet.</strong>{{if .Can "parts.edit"}}Add your first spare part with “New part”. You can enter opening stock while creating it.{{end}}{{end}}</div>
+{{end}}
+</div>
+{{end}}

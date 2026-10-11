@@ -1,0 +1,35 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><h1>Vehicles</h1><p class="muted">Add vehicles from a customer’s page.</p></div></div>
+<form class="filters" method="get" action="/vehicles" role="search">
+  <div class="field wide"><label for="f-q">Search registration, make, model, VIN, owner or phone</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-archived">Show</label>
+    <select id="f-archived" name="archived" data-autosubmit>
+      <option value="">Active</option>
+      <option value="1"{{if eq ($l.Get "archived") "1"}} selected{{end}}>Archived</option>
+      <option value="all"{{if eq ($l.Get "archived") "all"}} selected{{end}}>All</option>
+    </select></div>
+  <button class="btn btn-secondary" type="submit">Search</button>
+</form>
+<div class="card">
+{{if .D.vehicles}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "reg" "T" "Registration")}}
+      {{template "th" (dict "L" $l "K" "make" "T" "Make / model")}}
+      {{template "th" (dict "L" $l "K" "year" "T" "Year")}}
+      {{template "th" (dict "L" $l "K" "customer" "T" "Owner")}}
+      <th scope="col">Phone</th><th scope="col"></th>
+    </tr></thead>
+    <tbody>{{range .D.vehicles}}<tr{{if .Archived}} class="inactive"{{end}}>
+      <td><a href="/vehicles/{{.ID}}">{{.Registration}}</a></td><td>{{.Make}} {{.Model}}</td><td>{{nullInt .Year}}</td>
+      <td><a href="/customers/{{.CustomerID}}">{{.CustomerName}}</a></td><td>{{.CustomerPhone}}</td>
+      <td class="actions">{{if and ($.Can "jobs.create") (not .Archived)}}<a class="btn btn-sm" href="/jobs/new?customer_id={{.CustomerID}}&amp;vehicle_id={{.ID}}">Open job</a>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty">{{if $l.Get "q"}}<strong>No vehicles match “{{$l.Get "q"}}”.</strong>{{else}}<strong>No vehicles yet.</strong>Open a customer and choose “Add vehicle”.{{end}}</div>
+{{end}}
+</div>
+{{end}}

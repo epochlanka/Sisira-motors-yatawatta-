@@ -1,0 +1,48 @@
+{{define "csrf"}}<input type="hidden" name="csrf_token" value="{{.CSRF}}">{{end}}
+
+{{define "flash"}}{{if .FlashMsg}}<div class="flash flash-{{.FlashKind}}" role="{{if eq .FlashKind "error"}}alert{{else}}status{{end}}">{{.FlashMsg}}</div>{{end}}{{end}}
+
+{{/* Text input. dict: P=page F=field L=label V=value T=type R=required M=maxlength H=hint PH=placeholder IM=inputmode AC=autocomplete */}}
+{{define "input"}}<div class="field{{if index .P.Errors .F}} has-error{{end}}">
+  <label for="f-{{.F}}">{{.L}}{{if .R}} <span class="req" aria-hidden="true">*</span>{{end}}</label>
+  <input id="f-{{.F}}" name="{{.F}}" type="{{or .T "text"}}" value="{{.V}}"{{if .R}} required{{end}}{{with .M}} maxlength="{{.}}"{{end}}{{with .PH}} placeholder="{{.}}"{{end}}{{with .IM}} inputmode="{{.}}"{{end}}{{with .AC}} autocomplete="{{.}}"{{end}}{{if index .P.Errors .F}} aria-invalid="true" aria-describedby="e-{{.F}}"{{else if .H}} aria-describedby="h-{{.F}}"{{end}}>
+  {{with index .P.Errors .F}}<p class="error" id="e-{{$.F}}">{{.}}</p>{{else}}{{with .H}}<p class="hint" id="h-{{$.F}}">{{.}}</p>{{end}}{{end}}
+</div>{{end}}
+
+{{define "textarea"}}<div class="field{{if index .P.Errors .F}} has-error{{end}}">
+  <label for="f-{{.F}}">{{.L}}{{if .R}} <span class="req" aria-hidden="true">*</span>{{end}}</label>
+  <textarea id="f-{{.F}}" name="{{.F}}"{{if .R}} required{{end}}{{with .M}} maxlength="{{.}}"{{end}}{{if index .P.Errors .F}} aria-invalid="true" aria-describedby="e-{{.F}}"{{end}}>{{.V}}</textarea>
+  {{with index .P.Errors .F}}<p class="error" id="e-{{$.F}}">{{.}}</p>{{else}}{{with .H}}<p class="hint">{{.}}</p>{{end}}{{end}}
+</div>{{end}}
+
+{{define "ferr"}}{{with index .P.Errors .F}}<p class="error" id="e-{{$.F}}">{{.}}</p>{{end}}{{end}}
+
+{{/* Sortable table header. dict: L=list K=key T=title C=class */}}
+{{define "th"}}<th scope="col"{{with .C}} class="{{.}}"{{end}} aria-sort="{{.L.AriaSort .K}}"><a href="{{.L.SortURL .K}}">{{.T}} {{.L.SortMark .K}}</a></th>{{end}}
+
+{{define "pager"}}{{if gt .Total 0}}<nav class="pager" aria-label="Pagination">
+  <span>Showing {{.From}}–{{.To}} of {{.Total}}</span>
+  <span class="links">
+    {{if .HasPrev}}<a class="btn btn-secondary btn-sm" href="{{.PrevURL}}" rel="prev">← Previous</a>{{end}}
+    <span>Page {{.Page}} of {{.Pages}}</span>
+    {{if .HasNext}}<a class="btn btn-secondary btn-sm" href="{{.NextURL}}" rel="next">Next →</a>{{end}}
+  </span>
+</nav>{{end}}{{end}}
+
+{{define "status"}}<span class="badge {{statusClass .}}">{{.}}</span>{{end}}
+
+{{define "datefilter"}}<div class="field"><label for="f-from">From</label><input id="f-from" type="date" name="from" value="{{.From}}"></div>
+<div class="field"><label for="f-to">To</label><input id="f-to" type="date" name="to" value="{{.To}}"></div>{{end}}
+
+{{define "partdatalist"}}<datalist id="parts-list">{{range .}}<option value="{{.Code}}" data-name="{{.Name}}" data-stock="{{qty .QtyOnHand}}" data-unit="{{.Unit}}" data-price="{{money .SalePrice}}" data-cost="{{money .PurchaseCost}}">{{.Code}} — {{.Name}} ({{qty .QtyOnHand}} {{.Unit}})</option>{{end}}</datalist>{{end}}
+
+{{define "reportnav"}}<p class="crumbs"><a href="/reports">Reports</a> /</p>{{end}}
+
+{{define "settingsnav"}}<nav class="filters" aria-label="Settings sections">
+  {{if .Can "settings.manage"}}<a class="btn {{if eq .Title "Business settings"}}{{else}}btn-secondary{{end}}" href="/settings">Business &amp; invoices</a>
+  <a class="btn {{if eq .Title "Charge categories"}}{{else}}btn-secondary{{end}}" href="/settings/charges">Charge categories</a>{{end}}
+  {{if .Can "users.manage"}}<a class="btn {{if eq .Title "Users"}}{{else}}btn-secondary{{end}}" href="/settings/users">Users</a>
+  <a class="btn {{if eq .Title "Roles & permissions"}}{{else}}btn-secondary{{end}}" href="/settings/roles">Roles &amp; permissions</a>{{end}}
+  {{if .Can "audit.view"}}<a class="btn {{if eq .Title "Audit log"}}{{else}}btn-secondary{{end}}" href="/settings/audit">Audit log</a>{{end}}
+  {{if .Can "settings.manage"}}<a class="btn btn-secondary" href="/settings/backup">Download backup</a>{{end}}
+</nav>{{end}}

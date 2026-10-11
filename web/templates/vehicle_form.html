@@ -1,0 +1,24 @@
+{{define "content"}}
+{{$v := .D.v}}{{$c := .D.c}}
+<div class="page-head"><div>
+  <p class="crumbs"><a href="/customers">Customers</a> / <a href="/customers/{{$c.ID}}">{{$c.Name}}</a> /</p>
+  <h1>{{.Title}}</h1></div></div>
+<div class="card">
+  <form method="post" action="{{if $v.ID}}/vehicles/{{$v.ID}}{{else}}/customers/{{$c.ID}}/vehicles{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "registration" "L" "Registration number" "V" $v.Registration "R" true "M" 30 "AC" "off" "H" "Spaces and dashes are ignored when searching.")}}
+      {{template "input" (dict "P" . "F" "year" "L" "Year" "V" (nullInt $v.Year) "IM" "numeric" "M" 4)}}
+      {{template "input" (dict "P" . "F" "make" "L" "Make" "V" $v.Make "M" 60)}}
+      {{template "input" (dict "P" . "F" "model" "L" "Model" "V" $v.Model "M" 60)}}
+      {{template "input" (dict "P" . "F" "vin" "L" "VIN / chassis number (optional)" "V" $v.VIN "M" 40 "AC" "off")}}
+      {{if $v.ID}}{{template "input" (dict "P" . "F" "customer_id" "L" "Owner customer ID" "V" $v.CustomerID "IM" "numeric" "H" "Change only when ownership transfers to another customer (see the ID in the customer’s address bar).")}}{{end}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $v.Notes "M" 2000)}}</div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" type="submit">Save vehicle</button>
+      <a class="btn btn-secondary" href="{{if $v.ID}}/vehicles/{{$v.ID}}{{else}}/customers/{{$c.ID}}{{end}}">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}

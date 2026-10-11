@@ -1,0 +1,24 @@
+{{define "content"}}
+<div class="page-head"><div><h1>Settings</h1></div></div>
+{{template "settingsnav" .}}
+<form method="post" action="/settings/roles" data-confirm="Save permission changes for all roles?">
+  {{template "csrf" .}}
+  <section class="card"><h2>Roles &amp; permissions</h2>
+    <p class="hint">Permissions are enforced by the server. The Administrator role always has every permission.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Permission</th>{{range .D.roles}}<th scope="col" class="num">{{.Name}}<br><small>{{.UserCount}} user(s)</small></th>{{end}}</tr></thead>
+      <tbody>{{range $p := .D.perms}}<tr><td><strong>{{$p.Group}}</strong> · {{$p.Description}}<br><small>{{$p.Code}}</small></td>
+        {{range $.D.roles}}<td class="num"><input type="checkbox" name="perm_{{.ID}}" value="{{$p.Code}}" aria-label="{{.Name}}: {{$p.Description}}"{{if index .Permissions $p.Code}} checked{{end}}{{if .IsSystem}} disabled{{end}}></td>{{end}}
+      </tr>{{end}}</tbody>
+    </table></div>
+    <div class="form-actions"><button class="btn" type="submit">Save permissions</button></div>
+  </section>
+</form>
+<section class="card"><h2>Add a role</h2>
+  <form method="post" action="/settings/roles/new" class="form-grid">{{template "csrf" .}}
+    <div class="field"><label for="f-rn">Name</label><input id="f-rn" name="name" required maxlength="50"></div>
+    <div class="field"><label for="f-rd">Description</label><input id="f-rd" name="description" maxlength="200"></div>
+    <div class="form-actions"><button class="btn btn-secondary" type="submit">Add role</button></div>
+  </form>
+</section>
+{{end}}

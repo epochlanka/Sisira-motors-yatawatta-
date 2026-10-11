@@ -1,0 +1,19 @@
+{{define "content"}}
+<div class="card login-card">
+  <h1>{{.Biz.BusinessName}}</h1>
+  <p class="sub">Staff sign in</p>
+  <form method="post" action="/login" novalidate>
+    {{template "csrf" .}}
+    <input type="hidden" name="next" value="{{.D.next}}">
+    <div class="field">
+      <label for="f-username">Username</label>
+      <input id="f-username" name="username" value="{{.D.username}}" autocomplete="username" required autofocus autocapitalize="none">
+    </div>
+    <div class="field">
+      <label for="f-password">Password</label>
+      <input id="f-password" name="password" type="password" autocomplete="current-password" required>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Sign in</button></div>
+  </form>
+</div>
+{{end}}

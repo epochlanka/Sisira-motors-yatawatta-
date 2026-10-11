@@ -1,0 +1,31 @@
+{{define "content"}}
+{{$p := .D.p}}
+<div class="page-head"><div>
+  <p class="crumbs"><a href="/parts">Parts</a> /{{if $p.ID}} <a href="/parts/{{$p.ID}}">{{$p.Code}}</a> /{{end}}</p>
+  <h1>{{.Title}}</h1></div></div>
+<div class="card">
+  <form method="post" action="{{if $p.ID}}/parts/{{$p.ID}}{{else}}/parts{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "code" "L" "Part code / SKU" "V" $p.Code "R" true "M" 40 "AC" "off" "H" "Must be unique (not case-sensitive).")}}
+      {{template "input" (dict "P" . "F" "name" "L" "Name" "V" $p.Name "R" true "M" 150)}}
+      <div class="field{{if .Errors.category}} has-error{{end}}"><label for="f-category">Category</label>
+        <input id="f-category" name="category" value="{{$p.Category}}" list="cat-list" maxlength="60">
+        <datalist id="cat-list">{{range .D.categories}}<option value="{{.}}">{{end}}</datalist></div>
+      {{template "input" (dict "P" . "F" "unit" "L" "Unit" "V" $p.Unit "M" 20 "H" "e.g. pcs, set, L, kg, m")}}
+      {{template "input" (dict "P" . "F" "sale_price" "L" "Sale price" "V" (moneyIn $p.SalePrice) "R" true "IM" "decimal")}}
+      {{template "input" (dict "P" . "F" "purchase_cost" "L" "Purchase cost" "V" (moneyIn $p.PurchaseCost) "IM" "decimal" "H" "Updated automatically when a purchase is received. Used for margin reports.")}}
+      {{template "input" (dict "P" . "F" "reorder_level" "L" "Reorder level" "V" (qty $p.ReorderLevel) "IM" "decimal" "H" "Low-stock warning when stock is at or below this.")}}
+      {{template "input" (dict "P" . "F" "location" "L" "Shelf / location" "V" $p.Location "M" 60)}}
+      {{if not $p.ID}}{{template "input" (dict "P" . "F" "opening_qty" "L" "Opening stock" "V" .D.opening "IM" "decimal" "H" "Recorded as an ‘Opening stock’ movement.")}}{{end}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "compatible" "L" "Compatible vehicles (optional)" "V" $p.Compatible "M" 500)}}</div>
+      <div class="full">{{template "textarea" (dict "P" . "F" "description" "L" "Description" "V" $p.Description "M" 1000)}}</div>
+    </div>
+    {{if $p.ID}}<p class="hint">Stock quantity is changed only through jobs, purchases and stock adjustments so every change is traceable.</p>{{end}}
+    <div class="form-actions">
+      <button class="btn" type="submit">Save part</button>
+      <a class="btn btn-secondary" href="{{if $p.ID}}/parts/{{$p.ID}}{{else}}/parts{{end}}">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}

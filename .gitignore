@@ -1,0 +1,13 @@
+# database, backups and secrets
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite*
+config.json
+*.pem
+*.key
+# build output
+/server
+/garage
+*.exe

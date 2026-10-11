@@ -1,0 +1,19 @@
+{{define "content"}}
+{{$s := .D.s}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/suppliers">Suppliers</a> /</p><h1>{{$s.Name}} {{if not $s.Active}}<span class="badge badge-muted">Inactive</span>{{end}}</h1></div>
+  <div class="actions">
+    {{if and (.Can "purchases.edit") $s.Active}}<a class="btn" href="/purchases/new?supplier_id={{$s.ID}}">+ New purchase</a>{{end}}
+    {{if .Can "suppliers.edit"}}<a class="btn btn-secondary" href="/suppliers/{{$s.ID}}/edit">Edit</a>
+    <form method="post" action="/suppliers/{{$s.ID}}/active" class="inline"{{if $s.Active}} data-confirm="Deactivate this supplier?"{{end}}>{{template "csrf" .}}<input type="hidden" name="active" value="{{if $s.Active}}0{{else}}1{{end}}"><button class="btn {{if $s.Active}}btn-danger{{else}}btn-secondary{{end}}" type="submit">{{if $s.Active}}Deactivate{{else}}Reactivate{{end}}</button></form>{{end}}
+  </div>
+</div>
+<section class="card"><dl class="kv">
+  <dt>Contact</dt><dd>{{or $s.ContactPerson "–"}}</dd><dt>Phone</dt><dd>{{or $s.Phone "–"}}</dd><dt>Email</dt><dd>{{or $s.Email "–"}}</dd>
+  <dt>Address</dt><dd class="pre">{{or $s.Address "–"}}</dd><dt>Notes</dt><dd class="pre">{{or $s.Notes "–"}}</dd></dl></section>
+{{if .Can "purchases.view"}}<section class="card"><h2>Purchases <span class="muted">{{money .D.sum}}</span></h2>
+  {{if .D.purchases}}<div class="table-wrap"><table>
+    <thead><tr><th scope="col">Purchase</th><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Status</th><th scope="col" class="num">Total</th></tr></thead>
+    <tbody>{{range .D.purchases}}<tr><td><a href="/purchases/{{.ID}}">{{.PurchaseNumber}}</a></td><td>{{date .PurchaseDate}}</td><td>{{.Reference}}</td><td>{{template "status" .Status}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+  </table></div>{{else}}<div class="empty"><strong>No purchases from this supplier yet.</strong></div>{{end}}</section>{{end}}
+{{end}}

@@ -1,0 +1,73 @@
+{{define "content"}}
+<div class="page-head">
+  <div><h1>Dashboard</h1><p class="muted">{{date .Today}}</p></div>
+  <div class="actions">
+    {{if .Can "jobs.create"}}<a class="btn" href="/jobs/new">+ Open job</a>{{end}}
+    {{if .Can "customers.edit"}}<a class="btn btn-secondary" href="/customers/new">+ Customer</a>{{end}}
+  </div>
+</div>
+{{$s := .D.stats}}
+<div class="stats">
+  {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}
+  <a class="stat" href="/jobs?status=active"><div class="label">{{if .Can "jobs.view_all"}}Open jobs{{else}}My open jobs{{end}}</div><div class="value">{{$s.ActiveJobs}}</div></a>
+  <a class="stat" href="/jobs?status=Waiting+for+Parts"><div class="label">Waiting for parts</div><div class="value">{{$s.WaitingParts}}</div></a>
+  <a class="stat{{if gt $s.ToInvoice 0}} alert{{end}}" href="/jobs?uninvoiced=1"><div class="label">Completed, not invoiced</div><div class="value">{{$s.ToInvoice}}</div></a>
+  {{end}}
+  {{if .Can "invoices.view"}}
+  <a class="stat{{if gt $s.UnpaidCount 0}} alert{{end}}" href="/invoices?pay=outstanding"><div class="label">Unpaid invoices ({{$s.UnpaidCount}})</div><div class="value">{{money $s.Outstanding}}</div></a>
+  <a class="stat" href="/payments?from={{.Today}}&amp;to={{.Today}}"><div class="label">Payments today</div><div class="value">{{money $s.TodayPayments}}</div></a>
+  <a class="stat" href="/invoices?from={{.Today}}&amp;to={{.Today}}"><div class="label">Invoiced today</div><div class="value">{{money $s.TodayInvoiced}}</div></a>
+  {{end}}
+  {{if .Can "parts.view"}}
+  <a class="stat{{if gt $s.LowStock 0}} alert{{end}}" href="/parts?low=1"><div class="label">Low-stock parts</div><div class="value">{{$s.LowStock}}</div></a>
+  {{end}}
+</div>
+
+<div class="grid grid-2">
+  {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}
+  <section class="card span-2">
+    <h2>Open jobs <a class="btn btn-secondary btn-sm" href="/jobs?status=active">View all</a></h2>
+    {{with .D.jobs}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Job</th><th scope="col">Date</th><th scope="col">Customer</th><th scope="col">Vehicle</th><th scope="col">Status</th><th scope="col">Assigned</th><th scope="col" class="num">Value</th></tr></thead>
+      <tbody>{{range .}}<tr>
+        <td><a href="/jobs/{{.ID}}">{{.JobNumber}}</a></td><td>{{date .JobDate}}</td><td>{{.CustomerName}}</td>
+        <td>{{if .VehicleReg}}{{.VehicleReg}} <small>{{.VehicleDesc}}</small>{{else}}<small>Counter sale</small>{{end}}</td>
+        <td>{{template "status" .Status}}</td><td>{{.AssignedName}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<div class="empty"><strong>No open jobs.</strong>{{if $.Can "jobs.create"}}Use “Open job” to start one.{{end}}</div>{{end}}
+  </section>
+  {{end}}
+  {{if .Can "invoices.view"}}
+  <section class="card">
+    <h2>Unpaid invoices <a class="btn btn-secondary btn-sm" href="/reports/outstanding">Outstanding report</a></h2>
+    {{with .D.unpaid}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Invoice</th><th scope="col">Customer</th><th scope="col" class="num">Balance</th></tr></thead>
+      <tbody>{{range .}}<tr><td><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a><br><small>{{date .InvoiceDate}}</small></td><td>{{.CustomerName}}</td><td class="num">{{money .Balance}}</td></tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<div class="empty"><strong>All invoices are paid.</strong></div>{{end}}
+  </section>
+  {{end}}
+  {{if .Can "parts.view"}}
+  <section class="card">
+    <h2>Low stock <a class="btn btn-secondary btn-sm" href="/parts?low=1">View all</a></h2>
+    {{with .D.low}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Part</th><th scope="col" class="num">In stock</th><th scope="col" class="num">Reorder at</th></tr></thead>
+      <tbody>{{range .}}<tr><td><a href="/parts/{{.ID}}">{{.Code}}</a> {{.Name}}</td><td class="num">{{qty .QtyOnHand}} {{.Unit}}</td><td class="num">{{qty .ReorderLevel}}</td></tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<div class="empty"><strong>No parts below their reorder level.</strong></div>{{end}}
+  </section>
+  {{end}}
+  {{with .D.activity}}
+  <section class="card span-2">
+    <h2>Recent activity <a class="btn btn-secondary btn-sm" href="/settings/audit">Audit log</a></h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">When</th><th scope="col">User</th><th scope="col">Action</th><th scope="col">Details</th></tr></thead>
+      <tbody>{{range .}}<tr><td>{{datetime .CreatedAt}}</td><td>{{.Username}}</td><td>{{.Action}}</td><td>{{.Details}}</td></tr>{{end}}</tbody>
+    </table></div>
+  </section>
+  {{end}}
+</div>
+{{end}}

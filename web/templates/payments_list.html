@@ -1,0 +1,23 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><p class="crumbs"><a href="/invoices">Invoices</a> /</p><h1>Payments</h1></div></div>
+<form class="filters" method="get" action="/payments" role="search">
+  <div class="field wide"><label for="f-q">Search receipt, invoice, customer, reference</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-method">Method</label><select id="f-method" name="method"><option value="">Any</option>{{range .D.methods}}<option{{if eq ($l.Get "method") .}} selected{{end}}>{{.}}</option>{{end}}</select></div>
+  <div class="field"><label for="f-status">Status</label><select id="f-status" name="status"><option value="">Valid</option><option{{if eq ($l.Get "status") "Void"}} selected{{end}}>Void</option><option value="all"{{if eq ($l.Get "status") "all"}} selected{{end}}>All</option></select></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+</form>
+<div class="card">
+{{if .D.payments}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Receipt</th>{{template "th" (dict "L" $l "K" "date" "T" "Date")}}<th scope="col">Invoice</th><th scope="col">Customer</th>{{template "th" (dict "L" $l "K" "method" "T" "Method")}}<th scope="col">Reference</th><th scope="col">Received by</th>{{template "th" (dict "L" $l "K" "amount" "T" "Amount" "C" "num")}}</tr></thead>
+    <tbody>{{range .D.payments}}<tr{{if eq .Status "Void"}} class="void"{{end}}>
+      <td><a href="/payments/{{.ID}}/receipt">{{.ReceiptNumber}}</a></td><td>{{date .PaymentDate}}</td><td><a href="/invoices/{{.InvoiceID}}">{{.InvoiceNumber}}</a></td>
+      <td>{{.CustomerName}}</td><td>{{.Method}}</td><td>{{.Reference}}</td><td>{{.ReceivedBy}}</td><td class="num">{{money .Amount}}</td></tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="7">Total ({{$l.Total}} payments)</td><td class="num">{{money .D.sum}}</td></tr></tfoot>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}<div class="empty"><strong>No payments found.</strong>Payments are recorded from an invoice page.</div>{{end}}
+</div>
+{{end}}

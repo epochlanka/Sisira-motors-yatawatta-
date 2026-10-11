@@ -1,0 +1,52 @@
+{{define "content"}}
+{{$l := .D.list}}{{$t := .D.totals}}
+<div class="page-head">
+  <div><h1>Invoices</h1><p class="muted">Invoices are created from completed jobs.</p></div>
+  <div class="actions"><a class="btn btn-secondary" href="/payments">Payments</a></div>
+</div>
+<form class="filters" method="get" action="/invoices" role="search">
+  <div class="field wide"><label for="f-q">Search invoice no., customer, phone, registration, job</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-pay">Payment</label>
+    <select id="f-pay" name="pay">
+      <option value="">Any</option>
+      <option value="outstanding"{{if eq ($l.Get "pay") "outstanding"}} selected{{end}}>Outstanding (unpaid + partial)</option>
+      <option{{if eq ($l.Get "pay") "Unpaid"}} selected{{end}}>Unpaid</option>
+      <option{{if eq ($l.Get "pay") "Partially Paid"}} selected{{end}}>Partially Paid</option>
+      <option{{if eq ($l.Get "pay") "Paid"}} selected{{end}}>Paid</option>
+    </select></div>
+  <div class="field"><label for="f-status">Invoice status</label>
+    <select id="f-status" name="status">
+      <option value="">Issued</option>
+      <option value="Void"{{if eq ($l.Get "status") "Void"}} selected{{end}}>Void</option>
+      <option value="all"{{if eq ($l.Get "status") "all"}} selected{{end}}>All</option>
+    </select></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+  <a class="btn btn-secondary" href="/invoices">Reset</a>
+</form>
+<div class="card">
+{{if .D.invoices}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "number" "T" "Invoice")}}
+      {{template "th" (dict "L" $l "K" "date" "T" "Date")}}
+      {{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}
+      <th scope="col">Vehicle</th><th scope="col">Status</th>
+      {{template "th" (dict "L" $l "K" "total" "T" "Total" "C" "num")}}
+      <th scope="col" class="num">Paid</th>
+      {{template "th" (dict "L" $l "K" "balance" "T" "Balance" "C" "num")}}
+    </tr></thead>
+    <tbody>{{range .D.invoices}}<tr{{if .IsVoid}} class="void"{{end}}>
+      <td><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a><br><small>{{.JobNumber}}</small></td><td>{{date .InvoiceDate}}</td>
+      <td>{{.CustomerName}}<br><small>{{.CustomerPhone}}</small></td><td>{{.VehicleReg}}</td>
+      <td>{{if .IsVoid}}{{template "status" "Void"}}{{else}}{{template "status" .PaymentStatus}}{{end}}</td>
+      <td class="num">{{money .Total}}</td><td class="num">{{money .AmountPaid}}</td><td class="num">{{if not .IsVoid}}{{money .Balance}}{{end}}</td>
+    </tr>{{end}}</tbody>
+    <tfoot><tr><td colspan="5">Totals for {{$t.Count}} invoice(s) matching the filter</td><td class="num">{{money $t.Total}}</td><td class="num">{{money $t.Paid}}</td><td class="num">{{money $t.Balance}}</td></tr></tfoot>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty"><strong>No invoices found.</strong>To create an invoice, open a job, mark it Completed and choose “Create invoice”.</div>
+{{end}}
+</div>
+{{end}}

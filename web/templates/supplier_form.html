@@ -1,0 +1,18 @@
+{{define "content"}}
+{{$s := .D.s}}
+<div class="page-head"><div><p class="crumbs"><a href="/suppliers">Suppliers</a> /</p><h1>{{.Title}}</h1></div></div>
+<div class="card">
+  <form method="post" action="{{if $s.ID}}/suppliers/{{$s.ID}}{{else}}/suppliers{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "name" "L" "Name" "V" $s.Name "R" true "M" 120)}}
+      {{template "input" (dict "P" . "F" "contact_person" "L" "Contact person" "V" $s.ContactPerson "M" 120)}}
+      {{template "input" (dict "P" . "F" "phone" "L" "Phone" "V" $s.Phone "T" "tel" "M" 40)}}
+      {{template "input" (dict "P" . "F" "email" "L" "Email" "V" $s.Email "T" "email" "M" 120)}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "address" "L" "Address" "V" $s.Address "M" 500)}}</div>
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $s.Notes "M" 2000)}}</div>
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Save supplier</button><a class="btn btn-secondary" href="/suppliers">Cancel</a></div>
+  </form>
+</div>
+{{end}}
