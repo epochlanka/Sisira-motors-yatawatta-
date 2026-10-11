@@ -177,6 +177,17 @@ Schedule a daily backup, for example with Windows Task Scheduler or cron, and ke
 - Duplicate active registrations are rejected.
 - The customer page shows their vehicles, jobs, invoices and balance due. The vehicle page shows its service history.
 
+**Appointments**
+- Diary with a week strip and day list, filterable by staff member; searchable list view.
+- Book existing customers (found by name, phone or registration) or new callers by name and phone.
+- A staff member cannot be double-booked; the form shows their other bookings that day.
+- Reschedule, cancel (with a reason), mark as no-show, and reinstate.
+- “Check in” opens a job with the booked work and staff member in one step. For a new caller it matches an existing customer by phone, or creates the customer and vehicle.
+
+**Service reminders**
+- Each vehicle can have a next service date, odometer reading and note, set on the vehicle or from the job page.
+- **Vehicles → Service due** is a printable call list of overdue and upcoming services with a “Book” button. The dashboard shows how many are due within 7 days.
+
 **Jobs**
 - Open a job by searching for a customer or vehicle.
 - Each job records date, odometer, reported issue, inspection notes, work performed, internal notes and assigned staff member.
@@ -224,6 +235,14 @@ Schedule a daily backup, for example with Windows Task Scheduler or cron, and ke
 - Payments and invoices can be voided with a reason.
 - Printable bill and printable payment receipts, using browser printing with print-specific CSS.
 
+**Expenses**
+- Record running costs (rent, utilities, wages, tools, consumables and more) by date, category, payment method, payee and reference.
+- Entries cannot be edited; a wrong entry is voided with a reason and kept in history.
+
+**Staff and timesheets**
+- Staff can clock in and out from the dashboard (break minutes recorded at clock-out).
+- Managers see each person's workload (open jobs, today's appointments, clock status, hours this week) and can add or correct timesheet entries.
+
 **Reports** (date range plus filters; all printable)
 - Jobs opened and completed, by status and staff member.
 - Sales, tax and discounts, with payments received by method.
@@ -232,6 +251,10 @@ Schedule a daily backup, for example with Windows Task Scheduler or cron, and ke
 - Stock levels and stock value, with a low-stock filter.
 - Purchases by supplier.
 - Stock movements by type.
+- Popular services: charge categories ranked by number of completed jobs and value.
+- Staff productivity: jobs completed, labour hours billed, hours worked and utilisation per staff member.
+- Expenses by category.
+- Income and expenses: net sales, cost of parts sold, gross profit, expenses and net profit (requires `reports.profit`).
 
 **Administration**
 - Users, with password reset and forced password change.
@@ -252,15 +275,15 @@ Schedule a daily backup, for example with Windows Task Scheduler or cron, and ke
 
 ## Roles and permissions
 
-There are 32 fine-grained permissions, enforced on the server for every page and action. The default roles are:
+There are 40 fine-grained permissions, enforced on the server for every page and action. The default roles are:
 
 | Role | Default access |
 |---|---|
 | Administrator | Everything. This system role always keeps every permission. |
-| Manager | Customers, jobs (including price override), invoices, voids, payments, inventory, purchases, reports and margins |
-| Front desk | Customers, vehicles, jobs, charges and parts on jobs, invoices and recording payments |
-| Mechanic | **Only jobs assigned to them**: notes, status, charges and parts. No customers, invoices or administration. |
-| Inventory clerk | Parts, stock adjustments, suppliers, purchases and receiving, and stock reports |
+| Manager | Customers, appointments, jobs (including price override), invoices, voids, payments, inventory, purchases, expenses, staff timesheets, reports and margins |
+| Front desk | Customers, vehicles, appointments, jobs, charges and parts on jobs, invoices and recording payments |
+| Mechanic | **Only jobs assigned to them**: notes, status, charges and parts; clock in and out. No customers, invoices or administration. |
+| Inventory clerk | Parts, stock adjustments, suppliers, purchases and receiving, and stock reports; clock in and out |
 
 Change these under **Settings → Roles & permissions**. For example, you can let the front desk void payments.
 The app makes sure at least one active user always keeps `users.manage`.

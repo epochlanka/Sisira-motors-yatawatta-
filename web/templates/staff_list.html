@@ -1,0 +1,27 @@
+{{define "content"}}
+<div class="page-head">
+  <div><h1>Staff</h1><p class="muted">Workload today and hours worked this week (from {{date .D.weekStart}}).</p></div>
+  <div class="actions">
+    <a class="btn btn-secondary" href="/staff/timesheets">Timesheets</a>
+    {{if .Can "reports.view"}}<a class="btn btn-secondary" href="/reports/staff">Productivity report</a>{{end}}
+    {{if .Can "staff.timesheets"}}<a class="btn" href="/staff/timesheets/new">+ Timesheet entry</a>{{end}}
+  </div>
+</div>
+<div class="card">
+{{if .D.staff}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Staff member</th><th scope="col">Today</th><th scope="col" class="num">Open jobs</th><th scope="col" class="num">Appts today</th>
+      <th scope="col" class="num">Done this week</th><th scope="col" class="num">Hours this week</th><th scope="col"></th></tr></thead>
+    <tbody>{{range .D.staff}}{{$t := index $.D.clock .UserID}}<tr>
+      <td><strong>{{.Name}}</strong><br><small>{{.RoleName}}</small></td>
+      <td>{{if $t.ID}}{{if $t.TimeOut.Valid}}{{template "status" "Clocked out"}} <small>{{$t.TimeIn}}–{{$t.TimeOut.String}}</small>{{else}}{{template "status" "Clocked in"}} <small>since {{$t.TimeIn}}</small>{{end}}{{else}}<small class="nowrap">Not in</small>{{end}}</td>
+      <td class="num">{{if .OpenJobs}}<a href="/jobs?status=active&amp;assigned={{.UserID}}">{{.OpenJobs}}</a>{{else}}0{{end}}</td>
+      <td class="num">{{if .ApptsToday}}<a href="/appointments?assigned={{.UserID}}">{{.ApptsToday}}</a>{{else}}0{{end}}</td>
+      <td class="num">{{.Completed}}</td>
+      <td class="num">{{hours .WorkedMin}}</td>
+      <td class="actions"><a class="btn btn-sm btn-secondary" href="/staff/timesheets?user={{.UserID}}">Timesheet</a></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+{{else}}<div class="empty"><strong>No active staff.</strong>Add users under Settings → Users.</div>{{end}}
+</div>
+{{end}}

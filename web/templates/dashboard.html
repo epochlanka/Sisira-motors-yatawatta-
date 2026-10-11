@@ -7,7 +7,14 @@
   </div>
 </div>
 {{$s := .D.stats}}
+{{if .D.canClock}}{{template "clockcard" .}}{{end}}
 <div class="stats">
+  {{if .Can "appointments.view"}}
+  <a class="stat" href="/appointments"><div class="label">Appointments still to arrive today</div><div class="value">{{$s.ApptsToday}}</div></a>
+  {{end}}
+  {{if .Can "customers.view"}}
+  <a class="stat{{if gt $s.ServiceDue 0}} alert{{end}}" href="/vehicles/service-due?within=7"><div class="label">Services due (7 days)</div><div class="value">{{$s.ServiceDue}}</div></a>
+  {{end}}
   {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}
   <a class="stat" href="/jobs?status=active"><div class="label">{{if .Can "jobs.view_all"}}Open jobs{{else}}My open jobs{{end}}</div><div class="value">{{$s.ActiveJobs}}</div></a>
   <a class="stat" href="/jobs?status=Waiting+for+Parts"><div class="label">Waiting for parts</div><div class="value">{{$s.WaitingParts}}</div></a>
@@ -24,6 +31,22 @@
 </div>
 
 <div class="grid grid-2">
+  {{if .Can "appointments.view"}}
+  <section class="card span-2">
+    <h2>Today’s appointments <span class="actions">{{if .Can "appointments.edit"}}<a class="btn btn-sm" href="/appointments/new">+ Book</a>{{end}} <a class="btn btn-secondary btn-sm" href="/appointments">Diary</a></span></h2>
+    {{with .D.appts}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Vehicle</th><th scope="col">Service</th><th scope="col">Staff</th><th scope="col">Status</th><th scope="col"></th></tr></thead>
+      <tbody>{{range .}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
+        <td><a href="/appointments/{{.ID}}">{{.StartTime}}</a></td><td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{or .VehicleReg "–"}}</td>
+        <td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td>
+        <td>{{template "status" .Status}}{{if .JobID.Valid}} <small><a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a></small>{{end}}</td>
+        <td class="actions">{{if and .Open ($.Can "appointments.edit") ($.Can "jobs.create")}}<form method="post" action="/appointments/{{.ID}}/check-in" class="inline">{{template "csrf" $}}<button class="btn btn-sm btn-ok" type="submit">Check in</button></form>{{end}}</td>
+      </tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<div class="empty"><strong>No appointments today.</strong>{{if $.Can "appointments.edit"}}Walk-in customers can be booked in with “Open job”.{{end}}</div>{{end}}
+  </section>
+  {{end}}
   {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}
   <section class="card span-2">
     <h2>Open jobs <a class="btn btn-secondary btn-sm" href="/jobs?status=active">View all</a></h2>

@@ -1,0 +1,21 @@
+{{define "content"}}
+{{template "reportnav"}}
+<div class="page-head"><div><h1>Popular services</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · labour and extra charges on jobs completed in the period</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/services">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Jobs completed</div><div class="value">{{.D.completed}}</div></div>
+  <div class="stat"><div class="label">Labour &amp; charges value</div><div class="value">{{money .D.revenue}}</div></div>
+</div>
+<section class="card">
+{{if .D.rows}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">#</th><th scope="col">Service (charge category)</th><th scope="col" class="num">Jobs</th><th scope="col" class="num">Quantity</th><th scope="col" class="num">Value</th><th scope="col" class="num">Average per job</th></tr></thead>
+  <tbody>{{range $i, $r := .D.rows}}<tr><td>{{add $i 1}}</td><td>{{$r.Name}}</td><td class="num">{{$r.Jobs}}</td><td class="num">{{qty $r.Qty}} {{$r.Unit}}</td><td class="num">{{money $r.Revenue}}</td><td class="num">{{money $r.Average}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td colspan="4">Total</td><td class="num">{{money .D.revenue}}</td><td></td></tr></tfoot>
+</table></div>{{else}}<div class="empty"><strong>No completed jobs with charges in this period.</strong></div>{{end}}
+</section>
+<p class="hint">Ranked by the number of jobs that included each service. Values are before discounts and tax. Charges without a category are grouped as “Uncategorised”.</p>
+{{end}}

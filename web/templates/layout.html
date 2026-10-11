@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{.Title}} · {{.Biz.BusinessName}}</title>
-<link rel="stylesheet" href="/static/app.css">
-<script src="/static/app.js" defer></script>
+<link rel="stylesheet" href="{{asset "app.css"}}">
+<script src="{{asset "app.js"}}" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -23,6 +23,7 @@
   <nav id="nav" class="sidenav" aria-label="Main navigation">
     <ul>
       {{if .Can "dashboard.view"}}<li><a href="/"{{if eq .Active "dashboard"}} aria-current="page"{{end}}>Dashboard</a></li>{{end}}
+      {{if .Can "appointments.view"}}<li><a href="/appointments"{{if eq .Active "appointments"}} aria-current="page"{{end}}>Appointments</a></li>{{end}}
       {{if .CanAny "jobs.view_all" "jobs.view_assigned"}}<li><a href="/jobs"{{if eq .Active "jobs"}} aria-current="page"{{end}}>Jobs</a></li>{{end}}
       {{if .Can "customers.view"}}<li><a href="/customers"{{if eq .Active "customers"}} aria-current="page"{{end}}>Customers</a></li>
       <li><a href="/vehicles"{{if eq .Active "vehicles"}} aria-current="page"{{end}}>Vehicles</a></li>{{end}}
@@ -30,6 +31,9 @@
       {{if .Can "parts.view"}}<li><a href="/parts"{{if eq .Active "parts"}} aria-current="page"{{end}}>Parts</a></li>{{end}}
       {{if .Can "purchases.view"}}<li><a href="/purchases"{{if eq .Active "purchases"}} aria-current="page"{{end}}>Purchases</a></li>{{end}}
       {{if .Can "suppliers.view"}}<li><a href="/suppliers"{{if eq .Active "suppliers"}} aria-current="page"{{end}}>Suppliers</a></li>{{end}}
+      {{if .Can "expenses.view"}}<li><a href="/expenses"{{if eq .Active "expenses"}} aria-current="page"{{end}}>Expenses</a></li>{{end}}
+      {{if .Can "staff.view"}}<li><a href="/staff"{{if eq .Active "staff"}} aria-current="page"{{end}}>Staff</a></li>
+      {{else if .Can "timesheet.self"}}<li><a href="/staff/timesheets"{{if eq .Active "timesheet"}} aria-current="page"{{end}}>My timesheet</a></li>{{end}}
       {{if .Can "reports.view"}}<li><a href="/reports"{{if eq .Active "reports"}} aria-current="page"{{end}}>Reports</a></li>{{end}}
       {{if .CanAny "settings.manage" "users.manage" "audit.view"}}<li class="sep" aria-hidden="true"></li>
       <li><a href="{{if .Can "settings.manage"}}/settings{{else if .Can "users.manage"}}/settings/users{{else}}/settings/audit{{end}}"{{if eq .Active "settings"}} aria-current="page"{{end}}>Settings</a></li>{{end}}

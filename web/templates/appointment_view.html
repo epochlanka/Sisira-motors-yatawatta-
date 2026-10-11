@@ -1,0 +1,58 @@
+{{define "content"}}
+{{$ap := .D.ap}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/appointments?date={{$ap.ApptDate}}">Appointments</a> /</p>
+    <h1>{{date $ap.ApptDate}} · {{$ap.StartTime}}–{{$ap.EndTime}} {{template "status" $ap.Status}}</h1>
+    <p class="muted">{{$ap.Name}}{{with $ap.VehicleReg}} · {{.}}{{end}} · {{$ap.Service}}</p></div>
+  <div class="actions">
+    {{if and $ap.Open (.Can "appointments.edit")}}
+      {{if .Can "jobs.create"}}<form method="post" action="/appointments/{{$ap.ID}}/check-in" class="inline"
+        {{if ne $ap.ApptDate .Today}}data-confirm="This appointment is for {{date $ap.ApptDate}}. Check the customer in and open a job today?"{{end}}>
+        {{template "csrf" .}}<button class="btn btn-ok" type="submit">Check in &amp; open job</button></form>{{end}}
+      <a class="btn btn-secondary" href="/appointments/{{$ap.ID}}/edit">Edit / reschedule</a>
+    {{end}}
+    {{if and $ap.JobID.Valid (.CanAny "jobs.view_all" "jobs.view_assigned")}}<a class="btn" href="/jobs/{{$ap.JobID.Int64}}">Job {{$ap.JobNumber}}</a>{{end}}
+    {{if and (or (eq $ap.Status "Cancelled") (eq $ap.Status "No Show")) (.Can "appointments.edit")}}
+      <form method="post" action="/appointments/{{$ap.ID}}/reinstate" class="inline">{{template "csrf" .}}<button class="btn btn-secondary" type="submit">Reinstate</button></form>
+    {{end}}
+  </div>
+</div>
+<div class="grid grid-2">
+  <section class="card">
+    <h2>Booking</h2>
+    <dl class="kv">
+      <dt>Date</dt><dd>{{date $ap.ApptDate}}</dd>
+      <dt>Time</dt><dd>{{$ap.StartTime}}–{{$ap.EndTime}} ({{hours $ap.DurationMin}})</dd>
+      <dt>Service</dt><dd>{{$ap.Service}}</dd>
+      <dt>Staff member</dt><dd>{{or $ap.AssignedName "Not assigned"}}</dd>
+      <dt>Notes</dt><dd class="pre">{{or $ap.Notes "–"}}</dd>
+      {{if $ap.CancelReason}}<dt>Reason</dt><dd>{{$ap.CancelReason}}</dd>{{end}}
+      <dt>Booked by</dt><dd>{{$ap.CreatedBy}} · {{datetime $ap.CreatedAt}}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Customer</h2>
+    <dl class="kv">
+      <dt>Name</dt><dd>{{if and $ap.CustomerID.Valid (.Can "customers.view")}}<a href="/customers/{{$ap.CustomerID.Int64}}">{{$ap.Name}}</a>{{else}}{{$ap.Name}}{{end}}</dd>
+      <dt>Phone</dt><dd><a href="tel:{{$ap.ContactPhone}}">{{$ap.ContactPhone}}</a></dd>
+      <dt>Vehicle</dt><dd>{{if and $ap.VehicleID.Valid (.Can "customers.view")}}<a href="/vehicles/{{$ap.VehicleID.Int64}}">{{$ap.VehicleReg}}</a> {{$ap.VehicleDesc}}{{else}}{{or $ap.VehicleReg "–"}}{{end}}</dd>
+    </dl>
+    {{if and (not $ap.CustomerID.Valid) $ap.Open}}<p class="hint">Not yet a customer. Checking in matches an existing customer by phone number, or creates the customer{{if $ap.VehicleReg}} and vehicle{{end}} from these details.</p>{{end}}
+  </section>
+</div>
+{{if and $ap.Open (.Can "appointments.edit")}}
+<section class="card">
+  <details><summary>Cancel or mark as no-show</summary>
+    <form method="post" action="/appointments/{{$ap.ID}}/close" class="stack">
+      {{template "csrf" .}}
+      <div class="form-grid">
+        <div class="field"><label for="f-cstatus">Mark as</label>
+          <select id="f-cstatus" name="status"><option>Cancelled</option><option>No Show</option></select></div>
+        <div class="field"><label for="f-creason">Reason</label><input id="f-creason" name="reason" maxlength="300" placeholder="Required when cancelling"></div>
+      </div>
+      <button class="btn btn-danger" type="submit">Update appointment</button>
+    </form>
+  </details>
+</section>
+{{end}}
+{{end}}

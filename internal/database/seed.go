@@ -51,6 +51,24 @@ func SeedDefaults(ctx context.Context, db *sql.DB, cfg config.Config) error {
 			}
 		}
 	}
+	// Give default roles of older databases the permissions added for them in later versions.
+	for _, up := range models.PermissionUpgrades {
+		res, err := tx.ExecContext(ctx, "INSERT OR IGNORE INTO settings(key, value) VALUES (?, ?)", up.Key, now)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			continue // already applied
+		}
+		for role, perms := range up.Grants {
+			for _, p := range perms {
+				if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO role_permissions(role_id, permission)
+					SELECT id, ? FROM roles WHERE name = ?`, p, role); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	// The system (Administrator) role always holds every permission, including ones added in upgrades.
 	if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO role_permissions(role_id, permission)
 		SELECT r.id, p.code FROM roles r CROSS JOIN permissions p WHERE r.is_system = 1`); err != nil {

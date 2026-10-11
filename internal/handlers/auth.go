@@ -144,7 +144,8 @@ func (a *App) dashboard(w http.ResponseWriter, r *http.Request) {
 		// Users without the dashboard go to the first section they can use.
 		for _, x := range []struct{ perm, url string }{
 			{"jobs.view_all", "/jobs"}, {"jobs.view_assigned", "/jobs"}, {"customers.view", "/customers"},
-			{"invoices.view", "/invoices"}, {"parts.view", "/parts"}, {"purchases.view", "/purchases"},
+			{"appointments.view", "/appointments"}, {"invoices.view", "/invoices"}, {"parts.view", "/parts"}, {"purchases.view", "/purchases"},
+			{"expenses.view", "/expenses"}, {"timesheet.self", "/staff/timesheets"},
 		} {
 			if s.Can(x.perm) {
 				http.Redirect(w, r, x.url, http.StatusSeeOther)
@@ -191,6 +192,21 @@ func (a *App) dashboard(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		p.D["low"] = low
+	}
+	if s.Can("appointments.view") {
+		appts, _, err := repository.ListAppointments(ctx, a.DB, repository.ApptFilter{From: models.Today(), To: models.Today()},
+			repository.ListOpts{OrderBy: "a.start_time, a.id"})
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
+		p.D["appts"] = appts
+	}
+	if s.Can("timesheet.self") {
+		p.D["canClock"] = true
+		if t, err := repository.TimesheetFor(ctx, a.DB, s.User.ID, models.Today()); err == nil {
+			p.D["mine"] = t
+		}
 	}
 	if s.Can("audit.view") {
 		act, _, err := repository.ListAudit(ctx, a.DB, repository.AuditFilter{}, repository.ListOpts{OrderBy: "id DESC", Limit: 10})

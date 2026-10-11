@@ -46,3 +46,22 @@
   {{if .Can "audit.view"}}<a class="btn {{if eq .Title "Audit log"}}{{else}}btn-secondary{{end}}" href="/settings/audit">Audit log</a>{{end}}
   {{if .Can "settings.manage"}}<a class="btn btn-secondary" href="/settings/backup">Download backup</a>{{end}}
 </nav>{{end}}
+
+{{define "clockcard"}}<section class="card clock" aria-label="My time today">
+  {{with .D.mine}}{{if .TimeOut.Valid}}
+    <p><strong>Today:</strong> {{.TimeIn}}–{{.TimeOut.String}}{{if .BreakMin}}, break {{hours .BreakMin}}{{end}} · worked <strong>{{hours .WorkedMin}}</strong></p>
+  {{else}}
+    <form method="post" action="/timesheet/clock-out" class="clock-form" data-confirm="Clock out now?">
+      {{template "csrf" $}}<input type="hidden" name="next" value="{{$.Path}}">
+      <p>{{template "status" "Clocked in"}} since <strong>{{.TimeIn}}</strong></p>
+      <label for="f-break">Break taken (minutes)</label><input id="f-break" name="break_min" inputmode="numeric" value="0" maxlength="3">
+      <button class="btn btn-secondary" type="submit">Clock out</button>
+    </form>
+  {{end}}{{else}}
+    <form method="post" action="/timesheet/clock-in" class="clock-form">
+      {{template "csrf" $}}<input type="hidden" name="next" value="{{$.Path}}">
+      <p>You are not clocked in today.</p>
+      <button class="btn btn-ok" type="submit">Clock in</button>
+    </form>
+  {{end}}
+</section>{{end}}

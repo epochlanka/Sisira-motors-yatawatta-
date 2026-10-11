@@ -5,7 +5,7 @@
   <div>
     <p class="crumbs"><a href="/jobs">Jobs</a> /</p>
     <h1>{{$j.JobNumber}} {{template "status" $j.Status}}</h1>
-    <p class="muted">{{date $j.JobDate}} · {{$j.CustomerName}}{{if $j.VehicleReg}} · {{$j.VehicleReg}} {{$j.VehicleDesc}}{{else}} · counter sale{{end}}</p>
+    <p class="muted">{{date $j.JobDate}} · {{$j.CustomerName}}{{if $j.VehicleReg}} · {{$j.VehicleReg}} {{$j.VehicleDesc}}{{else}} · counter sale{{end}}{{with .D.appt}} · from <a href="/appointments/{{.ID}}">appointment {{date .ApptDate}} {{.StartTime}}</a>{{end}}</p>
   </div>
   <div class="actions">
     {{if .CanAny "jobs.edit" "jobs.notes"}}<a class="btn btn-secondary" href="/jobs/{{$j.ID}}/edit">Edit details</a>{{end}}
@@ -176,6 +176,28 @@
     <ul>{{range .D.invoices}}<li><a href="/invoices/{{.ID}}">{{.InvoiceNumber}}</a> {{date .InvoiceDate}} {{money .Total}} {{if .IsVoid}}{{template "status" "Void"}} – {{.VoidReason}}{{else}}{{template "status" .PaymentStatus}}{{end}}</li>{{end}}</ul>
   </details>
   {{end}}
+</section>
+{{end}}
+
+{{with .D.vehicle}}{{$v := .}}
+<section class="card" id="next-service">
+  <details{{if and (eq $j.Status "Completed") (or (not $v.NextServiceDate) ($v.ServiceDue $.Today))}} open{{end}}>
+    <summary>Next service reminder for {{$v.Registration}}{{if $v.NextServiceDate}}: {{date $v.NextServiceDate}}{{end}}{{if $v.NextServiceKm.Valid}} / {{nullInt $v.NextServiceKm}} km{{end}}</summary>
+    <form method="post" action="/vehicles/{{$v.ID}}/service" class="stack">
+      {{template "csrf" $}}<input type="hidden" name="next" value="/jobs/{{$j.ID}}#next-service">
+      <div class="form-grid">
+        <div class="field"><label for="f-nsd">Next service date</label><input id="f-nsd" type="date" name="next_service_date" value="{{$v.NextServiceDate}}"></div>
+        <div class="field"><label for="f-nsk">Next service at (odometer)</label><input id="f-nsk" name="next_service_km" inputmode="numeric" maxlength="9" value="{{nullInt $v.NextServiceKm}}"
+          placeholder="{{if $j.Odometer.Valid}}Current reading {{nullInt $j.Odometer}}{{end}}"></div>
+        <div class="field full"><label for="f-nsn">Service note</label><input id="f-nsn" name="service_note" maxlength="200" value="{{$v.ServiceNote}}" placeholder="e.g. Oil and filter change"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" type="submit">Save reminder</button>
+        {{if or $v.NextServiceDate $v.NextServiceKm.Valid}}<button class="btn btn-secondary" type="submit" name="clear" value="1">Clear reminder</button>{{end}}
+      </div>
+      <p class="hint">The vehicle appears on the Service due list (and the dashboard) as the date approaches.</p>
+    </form>
+  </details>
 </section>
 {{end}}
 

@@ -347,4 +347,71 @@ CREATE TABLE audit_log (
 CREATE INDEX ix_audit_created ON audit_log(created_at);
 CREATE INDEX ix_audit_entity ON audit_log(entity_type, entity_id);
 `,
+	// 2: appointments, service reminders, staff timesheets, expenses
+	`
+CREATE TABLE appointments (
+	id               INTEGER PRIMARY KEY,
+	appt_date        TEXT NOT NULL,
+	start_time       TEXT NOT NULL CHECK (length(start_time) = 5),
+	duration_min     INTEGER NOT NULL DEFAULT 60 CHECK (duration_min BETWEEN 5 AND 1440),
+	customer_id      INTEGER REFERENCES customers(id),
+	vehicle_id       INTEGER REFERENCES vehicles(id),
+	contact_name     TEXT NOT NULL DEFAULT '',
+	contact_phone    TEXT NOT NULL DEFAULT '',
+	vehicle_reg      TEXT NOT NULL DEFAULT '',
+	service          TEXT NOT NULL CHECK (length(service) > 0),
+	notes            TEXT NOT NULL DEFAULT '',
+	assigned_user_id INTEGER REFERENCES users(id),
+	status           TEXT NOT NULL DEFAULT 'Scheduled'
+	                 CHECK (status IN ('Scheduled','Checked In','Cancelled','No Show')),
+	job_id           INTEGER REFERENCES jobs(id),
+	cancel_reason    TEXT NOT NULL DEFAULT '',
+	created_by       INTEGER NOT NULL REFERENCES users(id),
+	created_at       TEXT NOT NULL,
+	updated_at       TEXT NOT NULL
+);
+CREATE INDEX ix_appointments_date ON appointments(appt_date, start_time);
+CREATE INDEX ix_appointments_customer ON appointments(customer_id);
+CREATE INDEX ix_appointments_assigned ON appointments(assigned_user_id, appt_date);
+
+ALTER TABLE vehicles ADD COLUMN next_service_date TEXT;
+ALTER TABLE vehicles ADD COLUMN next_service_km INTEGER CHECK (next_service_km IS NULL OR next_service_km >= 0);
+ALTER TABLE vehicles ADD COLUMN service_note TEXT NOT NULL DEFAULT '';
+CREATE INDEX ix_vehicles_next_service ON vehicles(next_service_date);
+
+CREATE TABLE timesheets (
+	id         INTEGER PRIMARY KEY,
+	user_id    INTEGER NOT NULL REFERENCES users(id),
+	work_date  TEXT NOT NULL,
+	time_in    TEXT NOT NULL CHECK (length(time_in) = 5),
+	time_out   TEXT CHECK (time_out IS NULL OR length(time_out) = 5),
+	break_min  INTEGER NOT NULL DEFAULT 0 CHECK (break_min BETWEEN 0 AND 1440),
+	notes      TEXT NOT NULL DEFAULT '',
+	created_by INTEGER NOT NULL REFERENCES users(id),
+	created_at TEXT NOT NULL,
+	updated_at TEXT NOT NULL,
+	UNIQUE (user_id, work_date)
+);
+CREATE INDEX ix_timesheets_date ON timesheets(work_date);
+
+CREATE TABLE expenses (
+	id           INTEGER PRIMARY KEY,
+	expense_date TEXT NOT NULL,
+	category     TEXT NOT NULL CHECK (length(category) > 0),
+	description  TEXT NOT NULL CHECK (length(description) > 0),
+	amount       INTEGER NOT NULL CHECK (amount > 0),
+	method       TEXT NOT NULL CHECK (method IN ('Cash','Card','Bank Transfer','Cheque','Other')),
+	paid_to      TEXT NOT NULL DEFAULT '',
+	reference    TEXT NOT NULL DEFAULT '',
+	notes        TEXT NOT NULL DEFAULT '',
+	status       TEXT NOT NULL DEFAULT 'Valid' CHECK (status IN ('Valid','Void')),
+	void_reason  TEXT NOT NULL DEFAULT '',
+	voided_at    TEXT,
+	voided_by    INTEGER REFERENCES users(id),
+	created_by   INTEGER NOT NULL REFERENCES users(id),
+	created_at   TEXT NOT NULL
+);
+CREATE INDEX ix_expenses_date ON expenses(expense_date);
+CREATE INDEX ix_expenses_category ON expenses(category);
+`,
 }

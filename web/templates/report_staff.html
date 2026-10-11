@@ -1,0 +1,31 @@
+{{define "content"}}
+{{template "reportnav"}}
+{{$t := .D.total}}
+<div class="page-head"><div><h1>Staff productivity</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · jobs completed by the assigned staff member, and hours from timesheets</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/staff">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Jobs completed</div><div class="value">{{$t.Completed}}</div></div>
+  <div class="stat"><div class="label">Labour hours billed</div><div class="value">{{qty $t.BilledHours}}</div></div>
+  <div class="stat"><div class="label">Hours worked (timesheets)</div><div class="value">{{hours $t.WorkedMin}}</div></div>
+  <div class="stat"><div class="label">Value of completed jobs</div><div class="value">{{money $t.Revenue}}</div></div>
+</div>
+<section class="card">
+{{if .D.rows}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Staff member</th><th scope="col" class="num">Open jobs now</th><th scope="col" class="num">Jobs completed</th><th scope="col" class="num">Hours billed</th>
+    <th scope="col" class="num">Hours worked</th><th scope="col" class="num">Utilisation*</th><th scope="col" class="num">Labour &amp; charges</th><th scope="col" class="num">Parts</th><th scope="col" class="num">Total</th></tr></thead>
+  <tbody>{{range .D.rows}}<tr{{if not .Active}} class="inactive"{{end}}>
+    <td>{{.Name}}<br><small>{{.RoleName}}</small></td><td class="num">{{.OpenJobs}}</td>
+    <td class="num">{{if .Completed}}<a href="/reports/jobs?status=Completed&amp;assigned={{.UserID}}&amp;from={{$.D.from}}&amp;to={{$.D.to}}">{{.Completed}}</a>{{else}}0{{end}}</td>
+    <td class="num">{{qty .BilledHours}}</td><td class="num">{{hours .WorkedMin}}</td><td class="num">{{if .WorkedMin}}{{.Utilisation}}%{{else}}–{{end}}</td>
+    <td class="num">{{money .LabourRevenue}}</td><td class="num">{{money .PartsRevenue}}</td><td class="num">{{money .Revenue}}</td>
+  </tr>{{end}}</tbody>
+  <tfoot><tr><td>Total</td><td class="num">{{$t.OpenJobs}}</td><td class="num">{{$t.Completed}}</td><td class="num">{{qty $t.BilledHours}}</td><td class="num">{{hours $t.WorkedMin}}</td><td></td>
+    <td class="num">{{money $t.LabourRevenue}}</td><td class="num">{{money $t.PartsRevenue}}</td><td class="num">{{money $t.Revenue}}</td></tr></tfoot>
+</table></div>{{else}}<div class="empty"><strong>No staff activity in this period.</strong></div>{{end}}
+</section>
+<p class="hint">* Utilisation = labour hours billed on completed jobs ÷ hours worked. “Hours billed” counts charge lines whose unit is “hour”. Jobs count towards the staff member assigned to them; the “Jobs completed” report uses the job date, so its count can differ.</p>
+{{end}}

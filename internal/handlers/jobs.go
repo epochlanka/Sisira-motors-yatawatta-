@@ -232,6 +232,19 @@ func (a *App) jobView(w http.ResponseWriter, r *http.Request) {
 		}
 		p.D["movements"] = moves
 	}
+	if j.VehicleID.Valid && p.CanAny("customers.edit", "jobs.edit") {
+		veh, err := repository.GetVehicle(ctx, a.DB, j.VehicleID.Int64)
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
+		p.D["vehicle"] = veh
+	}
+	if p.Can("appointments.view") {
+		if ap, err := repository.AppointmentForJob(ctx, a.DB, j.ID); err == nil {
+			p.D["appt"] = ap
+		}
+	}
 	p.D["statuses"] = models.JobStatuses
 	a.render(w, r, "job_view", p)
 }

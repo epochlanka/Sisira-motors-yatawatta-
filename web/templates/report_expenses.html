@@ -1,0 +1,27 @@
+{{define "content"}}
+{{template "reportnav"}}
+{{$l := .D.list}}
+<div class="page-head"><div><h1>Expenses report</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · valid (non-void) expenses</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/expenses">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <div class="field"><label for="f-category">Category</label>
+    <select id="f-category" name="category"><option value="">All categories</option>
+      {{range .D.categories}}<option{{if eq ($l.Get "category") .}} selected{{end}}>{{.}}</option>{{end}}
+    </select></div>
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<section class="card"><h2>By category</h2>
+{{if .D.byCategory}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Category</th><th scope="col" class="num">Entries</th><th scope="col" class="num">Amount</th></tr></thead>
+  <tbody>{{range .D.byCategory}}<tr><td><a href="/reports/expenses?from={{$.D.from}}&amp;to={{$.D.to}}&amp;category={{.Status}}">{{.Status}}</a></td><td class="num">{{.Count}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+</table></div>{{else}}<div class="empty"><strong>No expenses in this period.</strong></div>{{end}}
+</section>
+<section class="card"><h2>Expenses{{with $l.Get "category"}}: {{.}}{{end}} <span class="muted">{{money .D.sum}}</span></h2>
+{{if .D.expenses}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Date</th><th scope="col">Category</th><th scope="col">Description</th><th scope="col">Paid to</th><th scope="col">Method</th><th scope="col">Reference</th><th scope="col" class="num">Amount</th></tr></thead>
+  <tbody>{{range .D.expenses}}<tr><td><a href="/expenses/{{.ID}}">{{date .ExpenseDate}}</a></td><td>{{.Category}}</td><td>{{.Description}}</td><td>{{.PaidTo}}</td><td>{{.Method}}</td><td>{{.Reference}}</td><td class="num">{{money .Amount}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td colspan="6">Total</td><td class="num">{{money .D.sum}}</td></tr></tfoot>
+</table></div>{{template "pager" $l}}{{else}}<div class="empty"><strong>No expenses match.</strong></div>{{end}}
+</section>
+{{end}}

@@ -5,6 +5,7 @@
     <h1>{{$c.Name}} {{if $c.Archived}}<span class="badge badge-muted">Archived</span>{{end}}</h1></div>
   <div class="actions">
     {{if and (.Can "jobs.create") (not $c.Archived)}}<a class="btn" href="/jobs/new?customer_id={{$c.ID}}">+ Open job</a>{{end}}
+    {{if and (.Can "appointments.edit") (not $c.Archived)}}<a class="btn btn-secondary" href="/appointments/new?customer_id={{$c.ID}}">Book appointment</a>{{end}}
     {{if .Can "customers.edit"}}
       {{if not $c.Archived}}<a class="btn btn-secondary" href="/customers/{{$c.ID}}/vehicles/new">+ Add vehicle</a>{{end}}
       <a class="btn btn-secondary" href="/customers/{{$c.ID}}/edit">Edit</a>
@@ -41,6 +42,15 @@
     {{else}}<div class="empty"><strong>No vehicles yet.</strong>{{if .Can "customers.edit"}}<a href="/customers/{{$c.ID}}/vehicles/new">Add this customer’s first vehicle.</a>{{end}}</div>{{end}}
   </section>
 </div>
+{{if .D.appts}}
+<section class="card">
+  <h2>Upcoming appointments</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Date</th><th scope="col">Time</th><th scope="col">Vehicle</th><th scope="col">Service</th><th scope="col">Staff</th></tr></thead>
+    <tbody>{{range .D.appts}}<tr><td><a href="/appointments/{{.ID}}">{{date .ApptDate}}</a></td><td>{{.StartTime}}–{{.EndTime}}</td><td>{{or .VehicleReg "–"}}</td><td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td></tr>{{end}}</tbody>
+  </table></div>
+</section>
+{{end}}
 {{if .Can "jobs.view_all"}}
 <section class="card">
   <h2>Jobs</h2>

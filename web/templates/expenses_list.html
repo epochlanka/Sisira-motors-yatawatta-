@@ -1,0 +1,55 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head">
+  <div><h1>Expenses</h1><p class="muted">Running costs of the garage: rent, utilities, wages, tools and other spending. Parts bought for stock are recorded under Purchases.</p></div>
+  <div class="actions">
+    {{if .Can "reports.view"}}<a class="btn btn-secondary" href="/reports/expenses?from={{$l.Get "from"}}&amp;to={{$l.Get "to"}}">Report</a>{{end}}
+    {{if .Can "expenses.edit"}}<a class="btn" href="/expenses/new">+ Record expense</a>{{end}}
+  </div>
+</div>
+<form class="filters" method="get" action="/expenses" role="search">
+  <div class="field wide"><label for="f-q">Search description, paid to, reference</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-category">Category</label>
+    <select id="f-category" name="category"><option value="">All categories</option>
+      {{range .D.categories}}<option{{if eq ($l.Get "category") .}} selected{{end}}>{{.}}</option>{{end}}
+    </select></div>
+  <div class="field"><label for="f-method">Paid by</label>
+    <select id="f-method" name="method"><option value="">Any</option>
+      {{range .D.methods}}<option{{if eq ($l.Get "method") .}} selected{{end}}>{{.}}</option>{{end}}
+    </select></div>
+  <div class="field"><label for="f-status">Show</label>
+    <select id="f-status" name="status"><option value="">Valid</option>
+      <option value="void"{{if eq ($l.Get "status") "void"}} selected{{end}}>Void</option>
+      <option value="all"{{if eq ($l.Get "status") "all"}} selected{{end}}>All</option>
+    </select></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+  <a class="btn btn-secondary" href="/expenses">Reset</a>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Total of valid expenses shown</div><div class="value">{{money .D.sum}}</div></div>
+  <div class="stat"><div class="label">Entries</div><div class="value">{{$l.Total}}</div></div>
+</div>
+<div class="card">
+{{if .D.expenses}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "date" "T" "Date")}}
+      {{template "th" (dict "L" $l "K" "category" "T" "Category")}}
+      <th scope="col">Description</th>
+      {{template "th" (dict "L" $l "K" "paid_to" "T" "Paid to")}}
+      <th scope="col">Method</th>
+      {{template "th" (dict "L" $l "K" "amount" "T" "Amount" "C" "num")}}
+    </tr></thead>
+    <tbody>{{range .D.expenses}}<tr{{if .IsVoid}} class="void"{{end}}>
+      <td><a href="/expenses/{{.ID}}">{{date .ExpenseDate}}</a></td><td>{{.Category}}</td>
+      <td>{{.Description}}{{with .Reference}}<br><small>Ref: {{.}}</small>{{end}}</td><td>{{.PaidTo}}</td><td>{{.Method}}</td>
+      <td class="num">{{money .Amount}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty"><strong>No expenses in this period.</strong>{{if .Can "expenses.edit"}}<a href="/expenses/new">Record an expense.</a>{{end}}</div>
+{{end}}
+</div>
+{{end}}

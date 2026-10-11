@@ -1,0 +1,40 @@
+{{define "content"}}
+{{template "reportnav"}}
+{{$s := .D.s}}
+<div class="page-head"><div><h1>Income &amp; expenses</h1><p class="muted">{{date .D.from}} – {{date .D.to}} · issued invoices by invoice date, expenses by expense date</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print</button></div></div>
+<form class="filters" method="get" action="/reports/profit">
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <button class="btn btn-secondary" type="submit">Apply</button>
+</form>
+<div class="stats">
+  <div class="stat"><div class="label">Net sales (excl. {{or .Biz.TaxName "tax"}})</div><div class="value">{{money $s.NetSales}}</div></div>
+  <div class="stat"><div class="label">Gross profit</div><div class="value">{{money $s.GrossProfit}}</div></div>
+  <div class="stat"><div class="label">Expenses</div><div class="value">{{money $s.Expenses}}</div></div>
+  <div class="stat{{if neg $s.NetProfit}} alert{{end}}"><div class="label">Net profit</div><div class="value">{{money $s.NetProfit}}</div></div>
+</div>
+<div class="grid grid-2">
+<section class="card"><h2>Summary</h2>
+  <table class="totals" style="margin-left:0;max-width:none">
+    <tbody>
+      <tr><td>Invoices issued ({{$s.Invoices}}), incl. tax</td><td class="num">{{money $s.Gross}}</td></tr>
+      <tr><td>Less {{or .Biz.TaxName "tax"}} collected</td><td class="num">−{{money $s.Tax}}</td></tr>
+      <tr><td><strong>Net sales</strong> <small>(after {{money $s.Discounts}} discounts)</small></td><td class="num"><strong>{{money $s.NetSales}}</strong></td></tr>
+      <tr><td>Less cost of parts sold*</td><td class="num">−{{money $s.PartsCost}}</td></tr>
+      <tr><td><strong>Gross profit</strong></td><td class="num"><strong>{{money $s.GrossProfit}}</strong></td></tr>
+      <tr><td>Less expenses</td><td class="num">−{{money $s.Expenses}}</td></tr>
+      <tr class="grand"><td>Net profit</td><td class="num">{{money $s.NetProfit}}</td></tr>
+    </tbody>
+  </table>
+  <p class="hint">Payments actually received in the period: <strong>{{money $s.Received}}</strong>.</p>
+</section>
+<section class="card"><h2>Expenses by category <a class="btn btn-secondary btn-sm no-print" href="/reports/expenses?from={{.D.from}}&amp;to={{.D.to}}">Details</a></h2>
+{{if .D.byCategory}}<div class="table-wrap"><table>
+  <thead><tr><th scope="col">Category</th><th scope="col" class="num">Amount</th></tr></thead>
+  <tbody>{{range .D.byCategory}}<tr><td>{{.Status}}</td><td class="num">{{money .Total}}</td></tr>{{end}}</tbody>
+  <tfoot><tr><td>Total</td><td class="num">{{money $s.Expenses}}</td></tr></tfoot>
+</table></div>{{else}}<div class="empty"><strong>No expenses recorded in this period.</strong></div>{{end}}
+</section>
+</div>
+<p class="hint">* Cost of parts uses each part’s purchase cost recorded when it was added to the job. Stock bought (Purchases) is not an expense until the parts are sold. This is a management summary, not a formal accounting statement.</p>
+{{end}}

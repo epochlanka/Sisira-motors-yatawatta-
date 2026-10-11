@@ -1,0 +1,27 @@
+{{define "content"}}
+{{$e := .D.e}}
+<div class="page-head"><div><p class="crumbs"><a href="/expenses">Expenses</a> /</p><h1>{{.Title}}</h1></div></div>
+<div class="card">
+  <form method="post" action="/expenses" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{template "input" (dict "P" . "F" "expense_date" "L" "Date" "V" $e.ExpenseDate "T" "date" "R" true)}}
+      <div class="field{{if .Errors.category}} has-error{{end}}"><label for="f-category">Category <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-category" name="category"><option value="">Choose…</option>
+          {{range .D.categories}}<option{{if eq $e.Category .}} selected{{end}}>{{.}}</option>{{end}}
+        </select>{{template "ferr" (dict "P" . "F" "category")}}</div>
+      <div class="full">{{template "input" (dict "P" . "F" "description" "L" "Description" "V" $e.Description "R" true "M" 200 "PH" "e.g. October electricity bill")}}</div>
+      {{template "input" (dict "P" . "F" "amount" "L" (printf "Amount (%s)" .Biz.CurrencySymbol) "V" (or (and (pos $e.Amount) (moneyIn $e.Amount)) "") "R" true "IM" "decimal")}}
+      <div class="field{{if .Errors.method}} has-error{{end}}"><label for="f-method">Paid by <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-method" name="method">{{range .D.methods}}<option{{if eq $e.Method .}} selected{{end}}>{{.}}</option>{{end}}</select>
+        {{template "ferr" (dict "P" . "F" "method")}}</div>
+      {{template "input" (dict "P" . "F" "paid_to" "L" "Paid to" "V" $e.PaidTo "M" 120 "PH" "Person or company")}}
+      {{template "input" (dict "P" . "F" "reference" "L" "Reference (bill / receipt / cheque no.)" "V" $e.Reference "M" 80)}}
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $e.Notes "M" 1000)}}</div>
+      <div class="field full"><label class="check"><input type="checkbox" name="another" value="1"> Record another expense after saving</label></div>
+    </div>
+    <p class="hint">Expenses cannot be edited after saving; a wrong entry is voided (with a reason) and entered again.</p>
+    <div class="form-actions"><button class="btn" type="submit">Save expense</button><a class="btn btn-secondary" href="/expenses">Cancel</a></div>
+  </form>
+</div>
+{{end}}

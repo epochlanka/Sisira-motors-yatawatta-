@@ -1,0 +1,61 @@
+{{define "content"}}
+{{$ap := .D.ap}}{{$c := .D.c}}
+<div class="page-head"><div>
+  <p class="crumbs"><a href="/appointments">Appointments</a> /{{if $ap.ID}} <a href="/appointments/{{$ap.ID}}">{{date $ap.ApptDate}} {{$ap.StartTime}}</a> /{{end}}</p>
+  <h1>{{.Title}}</h1>
+  {{if $c}}<p class="muted">Customer: <strong>{{$c.Name}}</strong> · {{$c.Phone}}</p>{{end}}
+</div></div>
+<div class="card">
+  <form method="post" action="{{if $ap.ID}}/appointments/{{$ap.ID}}{{else}}/appointments{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{if $c}}
+      <input type="hidden" name="customer_id" value="{{$c.ID}}">
+      <div class="field{{if .Errors.vehicle_id}} has-error{{end}}">
+        <label for="f-vehicle_id">Vehicle</label>
+        <select id="f-vehicle_id" name="vehicle_id">
+          <option value="">No vehicle / not decided</option>
+          {{range .D.vehicles}}<option value="{{.ID}}"{{if and $ap.VehicleID.Valid (eq $ap.VehicleID.Int64 .ID)}} selected{{end}}>{{.Label}}</option>{{end}}
+        </select>
+        {{template "ferr" (dict "P" . "F" "vehicle_id")}}
+        {{if .Can "customers.edit"}}<p class="hint"><a href="/customers/{{$c.ID}}/vehicles/new">Add a vehicle for this customer</a></p>{{end}}
+      </div>
+      <div class="field"><span class="label">Customer</span><p>{{$c.Name}} · {{$c.Phone}}{{if not $ap.ID}} · <a href="/appointments/new?date={{$ap.ApptDate}}">change</a>{{end}}</p></div>
+      {{else}}
+      {{template "input" (dict "P" . "F" "contact_name" "L" "Name" "V" $ap.ContactName "R" true "M" 120 "AC" "off")}}
+      {{template "input" (dict "P" . "F" "contact_phone" "L" "Phone number" "V" $ap.ContactPhone "T" "tel" "R" true "M" 40 "AC" "off" "H" "A customer record is created (or matched by phone) when they check in.")}}
+      {{template "input" (dict "P" . "F" "vehicle_reg" "L" "Vehicle registration (optional)" "V" $ap.VehicleReg "M" 30 "AC" "off")}}
+      <div class="field"><span class="label">Existing customer?</span><p><a href="/appointments/new?date={{$ap.ApptDate}}">Search customers and vehicles</a></p></div>
+      {{end}}
+      {{template "input" (dict "P" . "F" "appt_date" "L" "Date" "V" $ap.ApptDate "T" "date" "R" true)}}
+      {{template "input" (dict "P" . "F" "start_time" "L" "Start time" "V" $ap.StartTime "T" "time" "R" true)}}
+      <div class="field{{if .Errors.duration_min}} has-error{{end}}">
+        <label for="f-duration_min">Expected duration <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-duration_min" name="duration_min">
+          {{range .D.durations}}<option value="{{.}}"{{if eq . $ap.DurationMin}} selected{{end}}>{{hours .}}</option>{{end}}
+        </select>
+        {{template "ferr" (dict "P" . "F" "duration_min")}}
+      </div>
+      <div class="field{{if .Errors.assigned_user_id}} has-error{{end}}">
+        <label for="f-assigned_user_id">Staff member</label>
+        <select id="f-assigned_user_id" name="assigned_user_id">
+          <option value="">Not assigned</option>
+          {{range .D.users}}<option value="{{.ID}}"{{if and $ap.AssignedUserID.Valid (eq $ap.AssignedUserID.Int64 .ID)}} selected{{end}}>{{.FullName}} ({{.RoleName}})</option>{{end}}
+        </select>
+        {{template "ferr" (dict "P" . "F" "assigned_user_id")}}
+        <p class="hint">A staff member cannot be booked for two appointments at the same time.</p>
+      </div>
+      <div class="full">{{template "input" (dict "P" . "F" "service" "L" "Service / reason for visit" "V" $ap.Service "R" true "M" 200 "PH" "e.g. Full service, brake noise, wheel alignment")}}</div>
+      <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $ap.Notes "M" 2000)}}</div>
+    </div>
+    {{with .D.booked}}
+    <div class="notice"><strong>Already booked for this staff member on {{date $ap.ApptDate}}:</strong>
+      {{range .}}{{if ne .ID $ap.ID}}<br>{{.StartTime}}–{{.EndTime}} · {{.Name}} · {{.Service}}{{end}}{{end}}</div>
+    {{end}}
+    <div class="form-actions">
+      <button class="btn" type="submit">{{if $ap.ID}}Save appointment{{else}}Book appointment{{end}}</button>
+      <a class="btn btn-secondary" href="{{if $ap.ID}}/appointments/{{$ap.ID}}{{else}}/appointments?date={{$ap.ApptDate}}{{end}}">Cancel</a>
+    </div>
+  </form>
+</div>
+{{end}}

@@ -241,3 +241,99 @@ func (a *App) reportMovements(w http.ResponseWriter, r *http.Request) {
 	p.D["summary"], p.D["movements"], p.D["list"], p.D["types"] = summary, list, l, models.MovementTypes
 	a.render(w, r, "report_movements", p)
 }
+
+func (a *App) reportServices(w http.ResponseWriter, r *http.Request) {
+	if !a.needAny(w, r, "jobs.view_all") {
+		return
+	}
+	p, from, to := a.reportPage(r, "Popular services")
+	rows, err := repository.ServicesSold(r.Context(), a.DB, from, to)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	completed, err := repository.JobsCompletedBetween(r.Context(), a.DB, from, to)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	var revenue models.Money
+	for _, x := range rows {
+		revenue += x.Revenue
+	}
+	p.D["rows"], p.D["completed"], p.D["revenue"] = rows, completed, revenue
+	a.render(w, r, "report_services", p)
+}
+
+func (a *App) reportStaff(w http.ResponseWriter, r *http.Request) {
+	if !a.needAny(w, r, "staff.view") {
+		return
+	}
+	p, from, to := a.reportPage(r, "Staff productivity")
+	stats, err := repository.StaffStats(r.Context(), a.DB, from, to, models.Today())
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	var rows []repository.StaffStat
+	var tot repository.StaffStat
+	for _, s := range stats {
+		if !s.Active && s.Completed == 0 && s.WorkedMin == 0 {
+			continue
+		}
+		rows = append(rows, s)
+		tot.Completed += s.Completed
+		tot.BilledHours += s.BilledHours
+		tot.LabourRevenue += s.LabourRevenue
+		tot.PartsRevenue += s.PartsRevenue
+		tot.WorkedMin += s.WorkedMin
+		tot.OpenJobs += s.OpenJobs
+	}
+	p.D["rows"], p.D["total"] = rows, tot
+	a.render(w, r, "report_staff", p)
+}
+
+func (a *App) reportExpenses(w http.ResponseWriter, r *http.Request) {
+	if !a.needAny(w, r, "expenses.view") {
+		return
+	}
+	ctx := r.Context()
+	p, from, to := a.reportPage(r, "Expenses report")
+	byCat, err := repository.ExpensesByCategory(ctx, a.DB, from, to)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	l := newList(r, expenseSorts, "date", "desc")
+	l.PerPage = 200
+	f := expenseFilter(r, l)
+	f.From, f.To = from, to
+	list, total, sum, err := repository.ListExpenses(ctx, a.DB, f, l.Opts())
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	l.Total = total
+	p.D["byCategory"], p.D["expenses"], p.D["sum"], p.D["list"], p.D["categories"] = byCat, list, sum, l, models.ExpenseCategories
+	a.render(w, r, "report_expenses", p)
+}
+
+func (a *App) reportProfit(w http.ResponseWriter, r *http.Request) {
+	if !a.needAny(w, r, "reports.profit") || !a.needAny(w, r, "invoices.view") {
+		return
+	}
+	ctx := r.Context()
+	p, from, to := a.reportPage(r, "Income & expenses")
+	sum, err := repository.Profit(ctx, a.DB, from, to)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	byCat, err := repository.ExpensesByCategory(ctx, a.DB, from, to)
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	p.D["s"], p.D["byCategory"] = sum, byCat
+	a.render(w, r, "report_profit", p)
+}

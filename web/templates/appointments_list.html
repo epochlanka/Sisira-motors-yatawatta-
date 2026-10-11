@@ -1,0 +1,87 @@
+{{define "content"}}
+<div class="page-head">
+  <div><h1>Appointments</h1>
+    {{if eq .D.view "day"}}<p class="muted">{{date .D.day}}{{if eq .D.day .Today}} (today){{end}}</p>{{end}}</div>
+  <div class="actions">
+    {{if eq .D.view "day"}}<a class="btn btn-secondary" href="/appointments?view=list&amp;status=open&amp;from={{.Today}}">Search / list</a>
+    {{else}}<a class="btn btn-secondary" href="/appointments">Diary</a>{{end}}
+    {{if .Can "appointments.edit"}}<a class="btn" href="/appointments/new{{if eq .D.view "day"}}?date={{.D.day}}{{end}}">+ Book appointment</a>{{end}}
+  </div>
+</div>
+
+{{if eq .D.view "day"}}
+<form class="filters" method="get" action="/appointments">
+  <div class="field"><label for="f-date">Go to date</label><input id="f-date" type="date" name="date" value="{{.D.day}}"></div>
+  <div class="field"><label for="f-assigned">Staff member</label>
+    <select id="f-assigned" name="assigned" data-autosubmit><option value="">Everyone</option>
+      {{range .D.users}}<option value="{{.ID}}"{{if eq $.D.assigned .ID}} selected{{end}}>{{.FullName}}</option>{{end}}
+    </select></div>
+  <button class="btn btn-secondary" type="submit">Show</button>
+  <a class="btn btn-secondary" href="/appointments">Today</a>
+</form>
+<nav class="week" aria-label="Week">
+  <a class="week-nav" href="/appointments?date={{.D.prevWeek}}{{with .D.assigned}}&amp;assigned={{.}}{{end}}" aria-label="Previous week">‹</a>
+  {{range .D.days}}<a class="week-day{{if .Selected}} selected{{end}}{{if .IsToday}} today{{end}}" href="/appointments?date={{.Date}}{{with $.D.assigned}}&amp;assigned={{.}}{{end}}"{{if .Selected}} aria-current="date"{{end}}>
+    <span>{{dayLabel .Date}}</span><strong>{{if .Count}}{{.Count}}{{else}}–{{end}}</strong></a>{{end}}
+  <a class="week-nav" href="/appointments?date={{.D.nextWeek}}{{with .D.assigned}}&amp;assigned={{.}}{{end}}" aria-label="Next week">›</a>
+</nav>
+<div class="card">
+{{if .D.appts}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Time</th><th scope="col">Customer</th><th scope="col">Vehicle</th><th scope="col">Service</th><th scope="col">Staff</th><th scope="col">Status</th><th scope="col"></th></tr></thead>
+    <tbody>{{range .D.appts}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
+      <td class="nowrap"><a href="/appointments/{{.ID}}"><strong>{{.StartTime}}</strong>–{{.EndTime}}</a></td>
+      <td>{{if .CustomerID.Valid}}<a href="/customers/{{.CustomerID.Int64}}">{{.Name}}</a>{{else}}{{.Name}} <span class="badge badge-muted">New</span>{{end}}<br><small>{{.ContactPhone}}</small></td>
+      <td>{{or .VehicleReg "–"}}{{with .VehicleDesc}}<br><small>{{.}}</small>{{end}}</td>
+      <td>{{.Service}}</td><td>{{or .AssignedName "–"}}</td>
+      <td>{{template "status" .Status}}{{if .JobID.Valid}}<br><small><a href="/jobs/{{.JobID.Int64}}">{{.JobNumber}}</a></small>{{end}}</td>
+      <td class="actions">{{if and .Open ($.Can "appointments.edit") ($.Can "jobs.create") (eq .ApptDate $.Today)}}
+        <form method="post" action="/appointments/{{.ID}}/check-in" class="inline">{{template "csrf" $}}<button class="btn btn-sm btn-ok" type="submit">Check in</button></form>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+{{else}}
+  <div class="empty"><strong>No appointments on {{date .D.day}}.</strong>{{if .Can "appointments.edit"}}<a href="/appointments/new?date={{.D.day}}">Book one.</a>{{end}}</div>
+{{end}}
+</div>
+
+{{else}}
+{{$l := .D.list}}
+<form class="filters" method="get" action="/appointments" role="search">
+  <input type="hidden" name="view" value="list">
+  <div class="field wide"><label for="f-q">Search name, phone, registration or service</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-status">Status</label>
+    <select id="f-status" name="status"><option value="">Any status</option>
+      <option value="open"{{if eq ($l.Get "status") "open"}} selected{{end}}>Scheduled</option>
+      {{range .D.statuses}}{{if ne . "Scheduled"}}<option{{if eq ($l.Get "status") .}} selected{{end}}>{{.}}</option>{{end}}{{end}}
+    </select></div>
+  <div class="field"><label for="f-assigned">Staff member</label>
+    <select id="f-assigned" name="assigned"><option value="">Everyone</option>
+      {{range .D.users}}<option value="{{.ID}}"{{if eq $.D.assigned .ID}} selected{{end}}>{{.FullName}}</option>{{end}}
+    </select></div>
+  {{template "datefilter" (dict "From" ($l.Get "from") "To" ($l.Get "to"))}}
+  <button class="btn btn-secondary" type="submit">Filter</button>
+  <a class="btn btn-secondary" href="/appointments?view=list">Reset</a>
+</form>
+<div class="card">
+{{if .D.appts}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "date" "T" "Date / time")}}
+      {{template "th" (dict "L" $l "K" "customer" "T" "Customer")}}
+      <th scope="col">Vehicle</th><th scope="col">Service</th>
+      {{template "th" (dict "L" $l "K" "assigned" "T" "Staff")}}
+      {{template "th" (dict "L" $l "K" "status" "T" "Status")}}
+    </tr></thead>
+    <tbody>{{range .D.appts}}<tr{{if or (eq .Status "Cancelled") (eq .Status "No Show")}} class="inactive"{{end}}>
+      <td><a href="/appointments/{{.ID}}">{{date .ApptDate}}</a><br><small>{{.StartTime}}–{{.EndTime}}</small></td>
+      <td>{{.Name}}<br><small>{{.ContactPhone}}</small></td><td>{{or .VehicleReg "–"}}</td><td>{{.Service}}</td>
+      <td>{{or .AssignedName "–"}}</td><td>{{template "status" .Status}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty"><strong>No appointments match.</strong></div>
+{{end}}
+</div>
+{{end}}
+{{end}}

@@ -49,38 +49,43 @@ func (s *Service) CreateJob(ctx context.Context, a models.Actor, j models.Job, p
 		return 0, err
 	}
 	var id int64
-	err := s.Tx(ctx, func(tx *sql.Tx) error {
-		c, err := repository.GetCustomer(ctx, tx, j.CustomerID)
-		if err != nil {
-			return err
-		}
-		if c.Archived {
-			return Fail("Customer is archived. Restore the customer before opening a job.")
-		}
-		if j.VehicleID.Valid {
-			v, err := repository.GetVehicle(ctx, tx, j.VehicleID.Int64)
-			if err != nil {
-				return err
-			}
-			if v.CustomerID != j.CustomerID {
-				return Fail("The selected vehicle does not belong to this customer.")
-			}
-			if v.Archived {
-				return Fail("The selected vehicle is archived.")
-			}
-		}
-		j.JobNumber, err = nextNumber(ctx, tx, "job", prefix, 6)
-		if err != nil {
-			return err
-		}
-		j.CreatedBy = a.ID
-		id, err = repository.CreateJob(ctx, tx, j)
-		if err != nil {
-			return err
-		}
-		return repository.Audit(ctx, tx, a, "job.create", "job", id, j.JobNumber+" for "+c.Name)
+	err := s.Tx(ctx, func(tx *sql.Tx) (err error) {
+		id, err = createJobTx(ctx, tx, a, j, prefix)
+		return err
 	})
 	return id, err
+}
+
+// createJobTx validates and inserts a job inside an existing transaction.
+func createJobTx(ctx context.Context, tx *sql.Tx, a models.Actor, j models.Job, prefix string) (int64, error) {
+	c, err := repository.GetCustomer(ctx, tx, j.CustomerID)
+	if err != nil {
+		return 0, err
+	}
+	if c.Archived {
+		return 0, Fail("Customer is archived. Restore the customer before opening a job.")
+	}
+	if j.VehicleID.Valid {
+		v, err := repository.GetVehicle(ctx, tx, j.VehicleID.Int64)
+		if err != nil {
+			return 0, err
+		}
+		if v.CustomerID != j.CustomerID {
+			return 0, Fail("The selected vehicle does not belong to this customer.")
+		}
+		if v.Archived {
+			return 0, Fail("The selected vehicle is archived.")
+		}
+	}
+	if j.JobNumber, err = nextNumber(ctx, tx, "job", prefix, 6); err != nil {
+		return 0, err
+	}
+	j.CreatedBy = a.ID
+	id, err := repository.CreateJob(ctx, tx, j)
+	if err != nil {
+		return 0, err
+	}
+	return id, repository.Audit(ctx, tx, a, "job.create", "job", id, j.JobNumber+" for "+c.Name)
 }
 
 // UpdateJob saves details. Users with jobs.edit can change everything; users with only

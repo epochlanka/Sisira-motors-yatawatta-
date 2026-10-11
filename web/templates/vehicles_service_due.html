@@ -1,0 +1,36 @@
+{{define "content"}}
+{{$l := .D.list}}
+<div class="page-head"><div><p class="crumbs"><a href="/vehicles">Vehicles</a> /</p><h1>Service due</h1>
+  <p class="muted">Vehicles whose next service date is overdue or within {{.D.within}} days. Call the owner and book an appointment.</p></div>
+  <div class="actions no-print"><button class="btn btn-secondary" type="button" data-print>Print call list</button></div></div>
+<form class="filters" method="get" action="/vehicles/service-due" role="search">
+  <div class="field wide"><label for="f-q">Search registration, make, owner or phone</label><input id="f-q" type="search" name="q" value="{{$l.Get "q"}}"></div>
+  <div class="field"><label for="f-within">Due within</label>
+    <select id="f-within" name="within" data-autosubmit>
+      {{range .D.windows}}<option value="{{.}}"{{if eq $.D.within .}} selected{{end}}>{{if eq . 0}}Overdue / today only{{else}}{{.}} days{{end}}</option>{{end}}
+    </select></div>
+  <button class="btn btn-secondary" type="submit">Show</button>
+</form>
+<div class="card">
+{{if .D.vehicles}}
+  <div class="table-wrap"><table>
+    <thead><tr>
+      {{template "th" (dict "L" $l "K" "due" "T" "Due")}}
+      {{template "th" (dict "L" $l "K" "reg" "T" "Vehicle")}}
+      {{template "th" (dict "L" $l "K" "customer" "T" "Owner")}}
+      <th scope="col">Phone</th><th scope="col" class="num">Due at (km)</th><th scope="col" class="num">Last odometer</th><th scope="col">Last visit</th><th scope="col">Note</th><th scope="col" class="no-print"></th>
+    </tr></thead>
+    <tbody>{{range .D.vehicles}}<tr>
+      <td>{{date .NextServiceDate}}<br>{{if .ServiceDue $.Today}}{{template "status" "Overdue"}}{{else}}{{template "status" "Due soon"}}{{end}}</td>
+      <td><a href="/vehicles/{{.ID}}">{{.Registration}}</a><br><small>{{.Make}} {{.Model}}</small></td>
+      <td><a href="/customers/{{.CustomerID}}">{{.CustomerName}}</a></td><td><a href="tel:{{.CustomerPhone}}">{{.CustomerPhone}}</a></td>
+      <td class="num">{{nullInt .NextServiceKm}}</td><td class="num">{{nullInt .LastOdometer}}</td><td>{{if .LastVisit}}{{date .LastVisit}}{{else}}–{{end}}</td><td>{{.ServiceNote}}</td>
+      <td class="actions no-print">{{if $.Can "appointments.edit"}}<a class="btn btn-sm" href="/appointments/new?customer_id={{.CustomerID}}&amp;vehicle_id={{.ID}}">Book</a>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{template "pager" $l}}
+{{else}}
+  <div class="empty"><strong>No services due.</strong>Set a “next service” date on a vehicle (or from a completed job) to see it here.</div>
+{{end}}
+</div>
+{{end}}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -99,6 +100,15 @@ func (a *App) customerView(w http.ResponseWriter, r *http.Request) {
 		}
 		p.D["invoices"], p.D["invTotals"] = invs, totals
 	}
+	if p.Can("appointments.view") {
+		appts, _, err := repository.ListAppointments(ctx, a.DB, repository.ApptFilter{CustomerID: id, From: models.Today(), Status: "open"},
+			repository.ListOpts{OrderBy: "a.appt_date, a.start_time", Limit: 20})
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
+		p.D["appts"] = appts
+	}
 	a.render(w, r, "customer_view", p)
 }
 
@@ -191,7 +201,85 @@ func vehicleFromForm(r *http.Request) (models.Vehicle, V) {
 	v.MaxLen("vin", veh.VIN, 40, "VIN/chassis number")
 	v.MaxLen("notes", veh.Notes, 2000, "Notes")
 	veh.Year = v.OptInt(r, "year", "Year", 1900, 2100)
+	serviceFromForm(r, &veh, v)
 	return veh, v
+}
+
+// serviceFromForm reads the next-service reminder fields.
+func serviceFromForm(r *http.Request, veh *models.Vehicle, v V) {
+	veh.NextServiceDate = val(r, "next_service_date")
+	if veh.NextServiceDate != "" {
+		v.Date("next_service_date", veh.NextServiceDate, "Next service date")
+	}
+	veh.NextServiceKm = v.OptInt(r, "next_service_km", "Next service odometer", 0, 99_999_999)
+	veh.ServiceNote = val(r, "service_note")
+	v.MaxLen("service_note", veh.ServiceNote, 200, "Service note")
+}
+
+// vehicleSetService updates only the service reminder (used from the job page).
+func (a *App) vehicleSetService(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	veh, err := repository.GetVehicle(ctx, a.DB, pathID(r, "id"))
+	if err != nil {
+		a.handleErr(w, r, err)
+		return
+	}
+	to := safeNext(val(r, "next"))
+	if to == "/" {
+		to = "/vehicles/" + strconv.FormatInt(veh.ID, 10)
+	}
+	v := V{}
+	if checked(r, "clear") {
+		veh.NextServiceDate, veh.NextServiceKm, veh.ServiceNote = "", sql.NullInt64{}, ""
+	} else {
+		serviceFromForm(r, &veh, v)
+		if veh.NextServiceDate == "" && !veh.NextServiceKm.Valid {
+			v.set("next_service_date", "Enter a date or odometer reading for the next service.")
+		}
+	}
+	if len(v) > 0 {
+		a.redirectFlash(w, r, to, "error", firstErr(v))
+		return
+	}
+	if err := repository.SetVehicleService(ctx, a.DB, veh); err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	msg := "Service reminder cleared."
+	if veh.NextServiceDate != "" || veh.NextServiceKm.Valid {
+		msg = "Next service reminder saved for " + veh.Registration + "."
+	}
+	a.audit(r, "vehicle.service_reminder", "vehicle", veh.ID, veh.Registration+" "+veh.NextServiceDate+" "+nullIntStr(veh.NextServiceKm)+" "+veh.ServiceNote)
+	a.redirectFlash(w, r, to, "success", msg)
+}
+
+func nullIntStr(n sql.NullInt64) string {
+	if !n.Valid {
+		return ""
+	}
+	return strconv.FormatInt(n.Int64, 10) + " km"
+}
+
+// vehiclesServiceDue lists vehicles whose next service is due within the chosen window.
+func (a *App) vehiclesServiceDue(w http.ResponseWriter, r *http.Request) {
+	within, _ := strconv.Atoi(r.URL.Query().Get("within"))
+	if within < 0 || within > 365 {
+		within = 0
+	}
+	if !r.URL.Query().Has("within") {
+		within = 14
+	}
+	l := newList(r, map[string]string{"due": "v.next_service_date, v.registration_norm", "reg": "v.registration_norm", "customer": "c.name COLLATE NOCASE"}, "due", "asc")
+	l.PerPage = 100
+	list, total, err := repository.ListVehicles(r.Context(), a.DB, repository.VehicleFilter{Q: l.Get("q"), DueBy: addDays(models.Today(), within)}, l.Opts())
+	if err != nil {
+		a.serverError(w, r, err)
+		return
+	}
+	l.Total = total
+	p := a.page(r, "Service due", "vehicles")
+	p.D["list"], p.D["vehicles"], p.D["within"], p.D["windows"] = l, list, within, []int{0, 7, 14, 30, 60, 90}
+	a.render(w, r, "vehicles_service_due", p)
 }
 
 func (a *App) vehicleNew(w http.ResponseWriter, r *http.Request) {
@@ -253,6 +341,15 @@ func (a *App) vehicleView(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		p.D["jobs"] = jobs
+	}
+	if p.Can("appointments.view") {
+		appts, _, err := repository.ListAppointments(ctx, a.DB, repository.ApptFilter{VehicleID: veh.ID, From: models.Today(), Status: "open"},
+			repository.ListOpts{OrderBy: "a.appt_date, a.start_time", Limit: 20})
+		if err != nil {
+			a.serverError(w, r, err)
+			return
+		}
+		p.D["appts"] = appts
 	}
 	a.render(w, r, "vehicle_view", p)
 }

@@ -15,6 +15,13 @@
       {{if $v.ID}}{{template "input" (dict "P" . "F" "customer_id" "L" "Owner customer ID" "V" $v.CustomerID "IM" "numeric" "H" "Change only when ownership transfers to another customer (see the ID in the customer’s address bar).")}}{{end}}
       <div class="full">{{template "textarea" (dict "P" . "F" "notes" "L" "Notes" "V" $v.Notes "M" 2000)}}</div>
     </div>
+    <fieldset><legend>Next service reminder (optional)</legend>
+      <div class="form-grid">
+        {{template "input" (dict "P" . "F" "next_service_date" "L" "Next service date" "V" $v.NextServiceDate "T" "date" "H" "The vehicle appears on the Service due list from about two weeks before this date.")}}
+        {{template "input" (dict "P" . "F" "next_service_km" "L" "Next service at (odometer)" "V" (nullInt $v.NextServiceKm) "IM" "numeric" "M" 9)}}
+        <div class="full">{{template "input" (dict "P" . "F" "service_note" "L" "Service note" "V" $v.ServiceNote "M" 200 "PH" "e.g. Oil and filter change, timing belt")}}</div>
+      </div>
+    </fieldset>
     <div class="form-actions">
       <button class="btn" type="submit">Save vehicle</button>
       <a class="btn btn-secondary" href="{{if $v.ID}}/vehicles/{{$v.ID}}{{else}}/customers/{{$c.ID}}{{end}}">Cancel</a>

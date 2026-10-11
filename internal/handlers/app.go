@@ -4,6 +4,8 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -80,13 +82,7 @@ func (a *App) funcs() template.FuncMap {
 		"money":   func(m models.Money) string { return m.String() },
 		"moneyIn": func(m models.Money) string { return m.Input() },
 		"qty":     func(q models.Qty) string { return q.String() },
-		"date": func(s string) string {
-			t, err := time.Parse(models.DateLayout, s)
-			if err != nil {
-				return s
-			}
-			return t.Format(a.Settings().DateFormat)
-		},
+		"date":    a.fmtDate,
 		"datetime": func(s string) string {
 			t, err := time.Parse(models.TimeLayout, s)
 			if err != nil {
@@ -111,8 +107,16 @@ func (a *App) funcs() template.FuncMap {
 			switch s {
 			case models.JobOpen, models.PurchaseDraft:
 				return "badge-info"
-			case models.JobInProgress:
+			case models.JobInProgress, "Clocked in":
 				return "badge-primary"
+			case models.ApptScheduled:
+				return "badge-info"
+			case models.ApptCheckedIn:
+				return "badge-ok"
+			case models.ApptNoShow, "Overdue":
+				return "badge-danger"
+			case "Due soon":
+				return "badge-warn"
 			case models.JobWaiting, models.PayPartial:
 				return "badge-warn"
 			case models.JobCompleted, models.PayPaid, models.PurchaseReceived, "Valid", "Active":
@@ -124,7 +128,17 @@ func (a *App) funcs() template.FuncMap {
 			}
 			return "badge-muted"
 		},
+		"asset":         assetURL,
 		"movementLabel": models.MovementLabel,
+		"hours":         models.HoursLabel,
+		"addDays":       addDays,
+		"dayLabel": func(s string) string {
+			t, err := time.Parse(models.DateLayout, s)
+			if err != nil {
+				return s
+			}
+			return t.Format("Mon 2 Jan")
+		},
 		"add":           func(a, b int) int { return a + b },
 		"lower":         strings.ToLower,
 		"neg":           func(m models.Money) bool { return m < 0 },
@@ -160,8 +174,33 @@ func (a *App) loadTemplates() error {
 	return nil
 }
 
+var (
+	assetOnce sync.Once
+	assetVer  map[string]string
+)
+
+// assetURL returns /static/<name> with a content hash so browsers fetch changed files after an upgrade.
+func assetURL(name string) string {
+	assetOnce.Do(func() {
+		assetVer = map[string]string{}
+		files, _ := fs.Glob(web.FS, "static/*")
+		for _, f := range files {
+			if b, err := fs.ReadFile(web.FS, f); err == nil {
+				sum := sha256.Sum256(b)
+				assetVer[path.Base(f)] = hex.EncodeToString(sum[:4])
+			}
+		}
+	})
+	u := "/static/" + name
+	if v := assetVer[name]; v != "" {
+		u += "?v=" + v
+	}
+	return u
+}
+
 // Page is the data passed to every template.
 type Page struct {
+	Path      string // request path, used to return here after small actions
 	Title     string
 	Active    string
 	Session   *middleware.Session
@@ -194,7 +233,7 @@ func (p *Page) User() models.User {
 
 func (a *App) page(r *http.Request, title, active string) *Page {
 	s := middleware.FromContext(r.Context())
-	p := &Page{Title: title, Active: active, Session: s, Biz: a.Settings(), Today: models.Today(), D: map[string]any{}, Errors: map[string]string{}}
+	p := &Page{Path: r.URL.Path, Title: title, Active: active, Session: s, Biz: a.Settings(), Today: models.Today(), D: map[string]any{}, Errors: map[string]string{}}
 	if s != nil {
 		p.CSRF = s.CSRF
 	}

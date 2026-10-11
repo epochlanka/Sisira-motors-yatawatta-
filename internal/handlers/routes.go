@@ -41,6 +41,19 @@ func (a *App) Routes() http.Handler {
 	auth.HandleFunc("GET /vehicles/{id}/edit", R(a.vehicleEdit, "customers.edit"))
 	auth.HandleFunc("POST /vehicles/{id}", R(a.vehicleUpdate, "customers.edit"))
 	auth.HandleFunc("POST /vehicles/{id}/archive", R(a.vehicleArchive, "customers.edit"))
+	auth.HandleFunc("POST /vehicles/{id}/service", R(a.vehicleSetService, "customers.edit", "jobs.edit"))
+	auth.HandleFunc("GET /vehicles/service-due", R(a.vehiclesServiceDue, "customers.view"))
+
+	// Appointments
+	auth.HandleFunc("GET /appointments", R(a.appointmentsList, "appointments.view"))
+	auth.HandleFunc("GET /appointments/new", R(a.appointmentNew, "appointments.edit"))
+	auth.HandleFunc("POST /appointments", R(a.appointmentCreate, "appointments.edit"))
+	auth.HandleFunc("GET /appointments/{id}", R(a.appointmentView, "appointments.view"))
+	auth.HandleFunc("GET /appointments/{id}/edit", R(a.appointmentEdit, "appointments.edit"))
+	auth.HandleFunc("POST /appointments/{id}", R(a.appointmentUpdate, "appointments.edit"))
+	auth.HandleFunc("POST /appointments/{id}/close", R(a.appointmentClose, "appointments.edit"))
+	auth.HandleFunc("POST /appointments/{id}/reinstate", R(a.appointmentReinstate, "appointments.edit"))
+	auth.HandleFunc("POST /appointments/{id}/check-in", R(a.appointmentCheckIn, "appointments.edit"))
 
 	// Jobs
 	auth.HandleFunc("GET /jobs", R(a.jobsList, "jobs.view_all", "jobs.view_assigned"))
@@ -97,6 +110,23 @@ func (a *App) Routes() http.Handler {
 	auth.HandleFunc("POST /purchases/{id}/receive", R(a.purchaseReceive, "purchases.receive"))
 	auth.HandleFunc("POST /purchases/{id}/cancel", R(a.purchaseCancel, "purchases.receive"))
 
+	// Expenses
+	auth.HandleFunc("GET /expenses", R(a.expensesList, "expenses.view"))
+	auth.HandleFunc("GET /expenses/new", R(a.expenseNew, "expenses.edit"))
+	auth.HandleFunc("POST /expenses", R(a.expenseCreate, "expenses.edit"))
+	auth.HandleFunc("GET /expenses/{id}", R(a.expenseView, "expenses.view"))
+	auth.HandleFunc("POST /expenses/{id}/void", R(a.expenseVoid, "expenses.void"))
+
+	// Staff & timesheets
+	auth.HandleFunc("GET /staff", R(a.staffList, "staff.view"))
+	auth.HandleFunc("GET /staff/timesheets", R(a.timesheetsList, "staff.view", "timesheet.self"))
+	auth.HandleFunc("GET /staff/timesheets/new", R(a.timesheetNew, "staff.timesheets"))
+	auth.HandleFunc("POST /staff/timesheets", R(a.timesheetCreate, "staff.timesheets"))
+	auth.HandleFunc("GET /staff/timesheets/{id}", R(a.timesheetEdit, "staff.timesheets"))
+	auth.HandleFunc("POST /staff/timesheets/{id}", R(a.timesheetUpdate, "staff.timesheets"))
+	auth.HandleFunc("POST /timesheet/clock-in", R(a.clockIn, "timesheet.self"))
+	auth.HandleFunc("POST /timesheet/clock-out", R(a.clockOut, "timesheet.self"))
+
 	// Reports
 	auth.HandleFunc("GET /reports", R(a.reportsIndex, "reports.view"))
 	auth.HandleFunc("GET /reports/jobs", R(a.reportJobs, "reports.view"))
@@ -106,6 +136,10 @@ func (a *App) Routes() http.Handler {
 	auth.HandleFunc("GET /reports/stock", R(a.reportStock, "reports.view"))
 	auth.HandleFunc("GET /reports/purchases", R(a.reportPurchases, "reports.view"))
 	auth.HandleFunc("GET /reports/movements", R(a.reportMovements, "reports.view"))
+	auth.HandleFunc("GET /reports/services", R(a.reportServices, "reports.view"))
+	auth.HandleFunc("GET /reports/staff", R(a.reportStaff, "reports.view"))
+	auth.HandleFunc("GET /reports/expenses", R(a.reportExpenses, "reports.view"))
+	auth.HandleFunc("GET /reports/profit", R(a.reportProfit, "reports.view"))
 
 	// Settings & administration
 	auth.HandleFunc("GET /settings", R(a.settingsForm, "settings.manage"))

@@ -102,6 +102,17 @@ type Vehicle struct {
 	Archived      bool
 	CreatedAt     string
 	UpdatedAt     string
+	// service reminder
+	NextServiceDate string
+	NextServiceKm   sql.NullInt64
+	ServiceNote     string
+	LastOdometer    sql.NullInt64
+	LastVisit       string
+}
+
+// ServiceDue reports whether the reminder date is today or earlier.
+func (v Vehicle) ServiceDue(today string) bool {
+	return v.NextServiceDate != "" && v.NextServiceDate <= today
 }
 
 func (v Vehicle) Label() string {
@@ -494,3 +505,172 @@ type Settings struct {
 func (s Settings) TaxRateLabel() string {
 	return Invoice{TaxRateBP: s.TaxRateBP}.TaxRateLabel()
 }
+
+// ---------- appointments ----------
+
+const (
+	ApptScheduled = "Scheduled"
+	ApptCheckedIn = "Checked In"
+	ApptCancelled = "Cancelled"
+	ApptNoShow    = "No Show"
+)
+
+var ApptStatuses = []string{ApptScheduled, ApptCheckedIn, ApptCancelled, ApptNoShow}
+
+func ValidApptStatus(s string) bool {
+	for _, x := range ApptStatuses {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+// TimeOfDayLayout is used for appointment and timesheet times ("HH:MM", 24-hour, local).
+const TimeOfDayLayout = "15:04"
+
+func ValidTimeOfDay(s string) bool {
+	_, err := time.Parse(TimeOfDayLayout, s)
+	return err == nil && len(s) == 5
+}
+
+// Minutes converts "HH:MM" to minutes after midnight (-1 if invalid).
+func Minutes(s string) int {
+	t, err := time.Parse(TimeOfDayLayout, s)
+	if err != nil {
+		return -1
+	}
+	return t.Hour()*60 + t.Minute()
+}
+
+// ClockTime formats minutes after midnight as "HH:MM" (wrapping past midnight).
+func ClockTime(m int) string {
+	m = ((m % 1440) + 1440) % 1440
+	return time.Date(2000, 1, 1, m/60, m%60, 0, 0, time.UTC).Format(TimeOfDayLayout)
+}
+
+type Appointment struct {
+	ID             int64
+	ApptDate       string
+	StartTime      string
+	DurationMin    int
+	CustomerID     sql.NullInt64
+	CustomerName   string
+	VehicleID      sql.NullInt64
+	ContactName    string
+	ContactPhone   string
+	VehicleReg     string
+	VehicleDesc    string
+	Service        string
+	Notes          string
+	AssignedUserID sql.NullInt64
+	AssignedName   string
+	Status         string
+	JobID          sql.NullInt64
+	JobNumber      string
+	CancelReason   string
+	CreatedBy      string
+	CreatedAt      string
+	UpdatedAt      string
+}
+
+func (a Appointment) EndTime() string { return ClockTime(Minutes(a.StartTime) + a.DurationMin) }
+
+// Name is the customer record name, or the contact name for people not yet registered.
+func (a Appointment) Name() string {
+	if a.CustomerName != "" {
+		return a.CustomerName
+	}
+	return a.ContactName
+}
+
+func (a Appointment) Open() bool { return a.Status == ApptScheduled }
+
+// ---------- staff time ----------
+
+type Timesheet struct {
+	ID        int64
+	UserID    int64
+	UserName  string
+	WorkDate  string
+	TimeIn    string
+	TimeOut   sql.NullString
+	BreakMin  int
+	Notes     string
+	CreatedAt string
+	UpdatedAt string
+}
+
+// WorkedMin returns minutes worked, excluding breaks; 0 while still clocked in.
+// A time out earlier than the time in is treated as an overnight shift.
+func (t Timesheet) WorkedMin() int {
+	if !t.TimeOut.Valid {
+		return 0
+	}
+	d := Minutes(t.TimeOut.String) - Minutes(t.TimeIn)
+	if d < 0 {
+		d += 1440
+	}
+	d -= t.BreakMin
+	if d < 0 {
+		return 0
+	}
+	return d
+}
+
+func (t Timesheet) Out() string {
+	if t.TimeOut.Valid {
+		return t.TimeOut.String
+	}
+	return ""
+}
+
+// HoursLabel formats minutes as "7h 30m".
+func HoursLabel(min int) string {
+	h, m := min/60, min%60
+	switch {
+	case min <= 0:
+		return "0h"
+	case h == 0:
+		return itoa(int64(m)) + "m"
+	case m == 0:
+		return itoa(int64(h)) + "h"
+	}
+	return itoa(int64(h)) + "h " + itoa(int64(m)) + "m"
+}
+
+// ---------- expenses ----------
+
+var ExpenseCategories = []string{
+	"Rent", "Electricity & water", "Telephone & internet", "Salaries & wages", "Tools & equipment",
+	"Workshop consumables", "Repairs & maintenance", "Transport & fuel", "Licences & insurance",
+	"Bank charges", "Office & stationery", "Other",
+}
+
+func ValidExpenseCategory(s string) bool {
+	for _, x := range ExpenseCategories {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+type Expense struct {
+	ID          int64
+	ExpenseDate string
+	Category    string
+	Description string
+	Amount      Money
+	Method      string
+	PaidTo      string
+	Reference   string
+	Notes       string
+	Status      string // Valid | Void
+	VoidReason  string
+	VoidedAt    string
+	CreatedBy   string
+	CreatedAt   string
+}
+
+func (e Expense) IsVoid() bool { return e.Status == "Void" }

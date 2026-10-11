@@ -1,0 +1,24 @@
+{{define "content"}}
+{{$t := .D.t}}
+<div class="page-head"><div><p class="crumbs"><a href="/staff">Staff</a> / <a href="/staff/timesheets">Timesheets</a> /</p><h1>{{.Title}}</h1>
+  {{if $t.ID}}<p class="muted">{{$t.UserName}} · {{date $t.WorkDate}}</p>{{end}}</div></div>
+<div class="card">
+  <form method="post" action="{{if $t.ID}}/staff/timesheets/{{$t.ID}}{{else}}/staff/timesheets{{end}}" novalidate>
+    {{template "csrf" .}}
+    <div class="form-grid">
+      {{if not $t.ID}}
+      <div class="field{{if .Errors.user_id}} has-error{{end}}"><label for="f-user_id">Staff member <span class="req" aria-hidden="true">*</span></label>
+        <select id="f-user_id" name="user_id"><option value="">Choose…</option>
+          {{range .D.users}}<option value="{{.ID}}"{{if eq $t.UserID .ID}} selected{{end}}>{{.FullName}}</option>{{end}}
+        </select>{{template "ferr" (dict "P" . "F" "user_id")}}</div>
+      {{template "input" (dict "P" . "F" "work_date" "L" "Date" "V" $t.WorkDate "T" "date" "R" true)}}
+      {{end}}
+      {{template "input" (dict "P" . "F" "time_in" "L" "Time in" "V" $t.TimeIn "T" "time" "R" true)}}
+      {{template "input" (dict "P" . "F" "time_out" "L" "Time out" "V" $t.Out "T" "time" "H" "Leave blank if still working. A time earlier than the time in counts as an overnight shift.")}}
+      {{template "input" (dict "P" . "F" "break_min" "L" "Break (minutes)" "V" $t.BreakMin "IM" "numeric" "M" 3)}}
+      {{template "input" (dict "P" . "F" "notes" "L" "Notes" "V" $t.Notes "M" 500 "PH" "e.g. half day, leave, correction reason")}}
+    </div>
+    <div class="form-actions"><button class="btn" type="submit">Save timesheet</button><a class="btn btn-secondary" href="/staff/timesheets">Cancel</a></div>
+  </form>
+</div>
+{{end}}

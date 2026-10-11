@@ -1,0 +1,41 @@
+{{define "content"}}
+<div class="page-head">
+  <div>{{if .D.all}}<p class="crumbs"><a href="/staff">Staff</a> /</p>{{end}}<h1>{{.Title}}</h1>
+    <p class="muted">{{date .D.from}} – {{date .D.to}}</p></div>
+  <div class="actions">
+    <button class="btn btn-secondary no-print" type="button" data-print>Print</button>
+    {{if .Can "staff.timesheets"}}<a class="btn" href="/staff/timesheets/new{{with .D.user}}?user={{.}}{{end}}">+ Timesheet entry</a>{{end}}
+  </div>
+</div>
+{{if .Can "timesheet.self"}}{{template "clockcard" .}}{{end}}
+<form class="filters" method="get" action="/staff/timesheets">
+  {{if .D.all}}<div class="field"><label for="f-user">Staff member</label>
+    <select id="f-user" name="user"><option value="">Everyone</option>
+      {{range .D.users}}<option value="{{.ID}}"{{if eq $.D.user .ID}} selected{{end}}>{{.FullName}}</option>{{end}}
+    </select></div>{{end}}
+  {{template "datefilter" (dict "From" .D.from "To" .D.to)}}
+  <button class="btn btn-secondary" type="submit">Show</button>
+</form>
+{{if .D.totals}}
+<section class="card"><h2>Totals</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Staff member</th><th scope="col" class="num">Days</th><th scope="col" class="num">Hours worked</th></tr></thead>
+    <tbody>{{range .D.totals}}<tr><td>{{.Name}}</td><td class="num">{{.Days}}</td><td class="num">{{hours .Minutes}}</td></tr>{{end}}</tbody>
+    <tfoot><tr><td>Total</td><td></td><td class="num">{{hours .D.grand}}</td></tr></tfoot>
+  </table></div>
+</section>
+{{end}}
+<section class="card"><h2>Entries</h2>
+{{if .D.sheets}}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Date</th>{{if .D.all}}<th scope="col">Staff member</th>{{end}}<th scope="col">In</th><th scope="col">Out</th><th scope="col" class="num">Break</th><th scope="col" class="num">Worked</th><th scope="col">Notes</th><th scope="col"></th></tr></thead>
+    <tbody>{{range .D.sheets}}<tr>
+      <td>{{date .WorkDate}}</td>{{if $.D.all}}<td>{{.UserName}}</td>{{end}}<td>{{.TimeIn}}</td>
+      <td>{{if .TimeOut.Valid}}{{.TimeOut.String}}{{else}}{{template "status" "Clocked in"}}{{end}}</td>
+      <td class="num">{{if .BreakMin}}{{hours .BreakMin}}{{else}}–{{end}}</td><td class="num">{{hours .WorkedMin}}</td><td>{{.Notes}}</td>
+      <td class="actions">{{if $.Can "staff.timesheets"}}<a class="btn btn-sm btn-secondary" href="/staff/timesheets/{{.ID}}">Correct</a>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+{{else}}<div class="empty"><strong>No timesheet entries in this period.</strong>{{if .Can "timesheet.self"}}Use “Clock in” when you start work.{{end}}</div>{{end}}
+</section>
+{{end}}

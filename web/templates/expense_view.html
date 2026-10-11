@@ -1,0 +1,35 @@
+{{define "content"}}
+{{$e := .D.e}}
+<div class="page-head">
+  <div><p class="crumbs"><a href="/expenses">Expenses</a> /</p>
+    <h1>{{money $e.Amount}} {{if $e.IsVoid}}{{template "status" "Void"}}{{end}}</h1>
+    <p class="muted">{{date $e.ExpenseDate}} · {{$e.Category}}</p></div>
+  <div class="actions">{{if .Can "expenses.edit"}}<a class="btn" href="/expenses/new">+ Record expense</a>{{end}}</div>
+</div>
+<section class="card">
+  <dl class="kv">
+    <dt>Date</dt><dd>{{date $e.ExpenseDate}}</dd>
+    <dt>Category</dt><dd>{{$e.Category}}</dd>
+    <dt>Description</dt><dd>{{$e.Description}}</dd>
+    <dt>Amount</dt><dd><strong>{{money $e.Amount}}</strong></dd>
+    <dt>Paid by</dt><dd>{{$e.Method}}</dd>
+    <dt>Paid to</dt><dd>{{or $e.PaidTo "–"}}</dd>
+    <dt>Reference</dt><dd>{{or $e.Reference "–"}}</dd>
+    <dt>Notes</dt><dd class="pre">{{or $e.Notes "–"}}</dd>
+    <dt>Recorded by</dt><dd>{{$e.CreatedBy}} · {{datetime $e.CreatedAt}}</dd>
+    {{if $e.IsVoid}}<dt>Voided</dt><dd>{{datetime $e.VoidedAt}} · {{$e.VoidReason}}</dd>{{end}}
+  </dl>
+</section>
+{{if and (not $e.IsVoid) (.Can "expenses.void")}}
+<section class="card">
+  <details><summary>Void expense</summary>
+    <p>Voiding keeps the record for audit but removes it from totals and reports. Record the correct expense again if needed.</p>
+    <form method="post" action="/expenses/{{$e.ID}}/void" data-confirm="Void this expense? This cannot be undone.">
+      {{template "csrf" .}}
+      <div class="field"><label for="f-vreason">Reason <span class="req" aria-hidden="true">*</span></label><input id="f-vreason" name="reason" required minlength="3" maxlength="300"></div>
+      <button class="btn btn-danger" type="submit">Void expense</button>
+    </form>
+  </details>
+</section>
+{{end}}
+{{end}}

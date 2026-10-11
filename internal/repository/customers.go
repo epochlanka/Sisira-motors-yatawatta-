@@ -101,14 +101,19 @@ type VehicleFilter struct {
 	Q          string
 	CustomerID int64
 	Archived   string
+	DueBy      string // service reminder date on or before this date
 }
 
-const vehicleSelect = `SELECT v.id, v.customer_id, c.name, c.phone, v.registration, v.make, v.model, v.year, v.vin, v.notes, v.archived, v.created_at, v.updated_at
+const vehicleSelect = `SELECT v.id, v.customer_id, c.name, c.phone, v.registration, v.make, v.model, v.year, v.vin, v.notes, v.archived, v.created_at, v.updated_at,
+	COALESCE(v.next_service_date, ''), v.next_service_km, v.service_note,
+	(SELECT MAX(odometer) FROM jobs WHERE vehicle_id = v.id AND status <> 'Cancelled'),
+	COALESCE((SELECT MAX(job_date) FROM jobs WHERE vehicle_id = v.id AND status <> 'Cancelled'), '')
 	FROM vehicles v JOIN customers c ON c.id = v.customer_id`
 
 func scanVehicle(sc interface{ Scan(...any) error }) (models.Vehicle, error) {
 	var v models.Vehicle
-	err := sc.Scan(&v.ID, &v.CustomerID, &v.CustomerName, &v.CustomerPhone, &v.Registration, &v.Make, &v.Model, &v.Year, &v.VIN, &v.Notes, &v.Archived, &v.CreatedAt, &v.UpdatedAt)
+	err := sc.Scan(&v.ID, &v.CustomerID, &v.CustomerName, &v.CustomerPhone, &v.Registration, &v.Make, &v.Model, &v.Year, &v.VIN, &v.Notes, &v.Archived, &v.CreatedAt, &v.UpdatedAt,
+		&v.NextServiceDate, &v.NextServiceKm, &v.ServiceNote, &v.LastOdometer, &v.LastVisit)
 	return v, err
 }
 
@@ -129,6 +134,9 @@ func ListVehicles(ctx context.Context, q DBTX, f VehicleFilter, o ListOpts) ([]m
 	}
 	if f.CustomerID != 0 {
 		w.Add("v.customer_id = ?", f.CustomerID)
+	}
+	if f.DueBy != "" {
+		w.Add("v.next_service_date IS NOT NULL AND v.next_service_date <= ? AND c.archived = 0", f.DueBy)
 	}
 	switch f.Archived {
 	case "1":
@@ -170,8 +178,10 @@ func RegistrationTaken(ctx context.Context, q DBTX, reg string, exceptID int64) 
 
 func CreateVehicle(ctx context.Context, q DBTX, v models.Vehicle) (int64, error) {
 	now := models.NowUTC()
-	res, err := q.ExecContext(ctx, `INSERT INTO vehicles(customer_id, registration, registration_norm, make, model, year, vin, notes, archived, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`, v.CustomerID, v.Registration, models.NormalizeReg(v.Registration), v.Make, v.Model, v.Year, v.VIN, v.Notes, now, now)
+	res, err := q.ExecContext(ctx, `INSERT INTO vehicles(customer_id, registration, registration_norm, make, model, year, vin, notes,
+		next_service_date, next_service_km, service_note, archived, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`, v.CustomerID, v.Registration, models.NormalizeReg(v.Registration), v.Make, v.Model, v.Year, v.VIN, v.Notes,
+		nullDate(v.NextServiceDate), v.NextServiceKm, v.ServiceNote, now, now)
 	if err != nil {
 		return 0, err
 	}
@@ -179,14 +189,41 @@ func CreateVehicle(ctx context.Context, q DBTX, v models.Vehicle) (int64, error)
 }
 
 func UpdateVehicle(ctx context.Context, q DBTX, v models.Vehicle) error {
-	_, err := q.ExecContext(ctx, `UPDATE vehicles SET customer_id = ?, registration = ?, registration_norm = ?, make = ?, model = ?, year = ?, vin = ?, notes = ?, updated_at = ? WHERE id = ?`,
-		v.CustomerID, v.Registration, models.NormalizeReg(v.Registration), v.Make, v.Model, v.Year, v.VIN, v.Notes, models.NowUTC(), v.ID)
+	_, err := q.ExecContext(ctx, `UPDATE vehicles SET customer_id = ?, registration = ?, registration_norm = ?, make = ?, model = ?, year = ?, vin = ?, notes = ?,
+		next_service_date = ?, next_service_km = ?, service_note = ?, updated_at = ? WHERE id = ?`,
+		v.CustomerID, v.Registration, models.NormalizeReg(v.Registration), v.Make, v.Model, v.Year, v.VIN, v.Notes,
+		nullDate(v.NextServiceDate), v.NextServiceKm, v.ServiceNote, models.NowUTC(), v.ID)
 	return err
 }
+
+// SetVehicleService updates only the service reminder of a vehicle.
+func SetVehicleService(ctx context.Context, q DBTX, v models.Vehicle) error {
+	_, err := q.ExecContext(ctx, "UPDATE vehicles SET next_service_date = ?, next_service_km = ?, service_note = ?, updated_at = ? WHERE id = ?",
+		nullDate(v.NextServiceDate), v.NextServiceKm, v.ServiceNote, models.NowUTC(), v.ID)
+	return err
+}
+
+func nullDate(s string) sql.NullString { return sql.NullString{String: s, Valid: s != ""} }
 
 func SetVehicleArchived(ctx context.Context, q DBTX, id int64, archived bool) error {
 	_, err := q.ExecContext(ctx, "UPDATE vehicles SET archived = ?, updated_at = ? WHERE id = ?", archived, models.NowUTC(), id)
 	return err
+}
+
+// FindCustomerByPhone returns the first active customer whose phone digits match exactly.
+func FindCustomerByPhone(ctx context.Context, q DBTX, phone string) (models.Customer, error) {
+	var id int64
+	err := q.QueryRowContext(ctx, "SELECT id FROM customers WHERE phone_norm = ? AND phone_norm <> '' AND archived = 0 ORDER BY id LIMIT 1", models.DigitsOnly(phone)).Scan(&id)
+	if err != nil {
+		return models.Customer{}, notFound(err)
+	}
+	return GetCustomer(ctx, q, id)
+}
+
+// FindVehicleByReg returns the active vehicle with this registration.
+func FindVehicleByReg(ctx context.Context, q DBTX, reg string) (models.Vehicle, error) {
+	v, err := scanVehicle(q.QueryRowContext(ctx, vehicleSelect+" WHERE v.registration_norm = ? AND v.archived = 0", models.NormalizeReg(reg)))
+	return v, notFound(err)
 }
 
 // CustomerOptions returns active customers for select lists (limited).

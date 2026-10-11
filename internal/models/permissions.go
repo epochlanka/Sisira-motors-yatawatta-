@@ -35,6 +35,14 @@ var AllPermissions = []Permission{
 	{"purchases.view", "Purchasing", "View purchases"},
 	{"purchases.edit", "Purchasing", "Create and edit draft purchases"},
 	{"purchases.receive", "Purchasing", "Receive and cancel purchases"},
+	{"appointments.view", "Appointments", "View the appointment diary"},
+	{"appointments.edit", "Appointments", "Book, reschedule, cancel and check in appointments"},
+	{"expenses.view", "Expenses", "View expenses"},
+	{"expenses.edit", "Expenses", "Record expenses"},
+	{"expenses.void", "Expenses", "Void expenses"},
+	{"timesheet.self", "Staff", "Clock in and out (own timesheet)"},
+	{"staff.view", "Staff", "View staff workload, timesheets and productivity"},
+	{"staff.timesheets", "Staff", "Add and correct timesheets for any staff member"},
 	{"reports.view", "Reports", "View reports (limited to areas the user can see)"},
 	{"reports.profit", "Reports", "View purchase costs, stock value and margins"},
 	{"settings.manage", "Administration", "Manage business settings and charge categories"},
@@ -65,18 +73,38 @@ var DefaultRoles = []struct {
 		"invoices.view", "invoices.create", "invoices.void", "payments.record", "payments.void",
 		"parts.view", "parts.edit", "stock.adjust", "suppliers.view", "suppliers.edit",
 		"purchases.view", "purchases.edit", "purchases.receive", "reports.view", "reports.profit",
+		"appointments.view", "appointments.edit", "expenses.view", "expenses.edit", "expenses.void",
+		"timesheet.self", "staff.view", "staff.timesheets",
 	}},
 	{"Front desk", "Customers, vehicles, jobs, invoices and payments", false, []string{
 		"dashboard.view", "customers.view", "customers.edit",
 		"jobs.view_all", "jobs.create", "jobs.edit", "jobs.notes", "jobs.status", "jobs.charges", "jobs.parts",
 		"invoices.view", "invoices.create", "payments.record", "parts.view",
+		"appointments.view", "appointments.edit", "timesheet.self",
 	}},
 	{"Mechanic", "Assigned jobs, job notes, charges and parts", false, []string{
 		"dashboard.view", "jobs.view_assigned", "jobs.notes", "jobs.status", "jobs.charges", "jobs.parts", "parts.view",
+		"timesheet.self",
 	}},
 	{"Inventory clerk", "Parts, suppliers, purchases and stock movements", false, []string{
 		"dashboard.view", "parts.view", "parts.edit", "stock.adjust",
 		"suppliers.view", "suppliers.edit", "purchases.view", "purchases.edit", "purchases.receive", "reports.view",
+		"timesheet.self",
+	}},
+}
+
+// PermissionUpgrades grants permissions added in later versions to the default roles
+// of databases created before them. Each entry is applied once (tracked by Key).
+var PermissionUpgrades = []struct {
+	Key    string
+	Grants map[string][]string
+}{
+	{"perm_upgrade_2", map[string][]string{
+		"Manager": {"appointments.view", "appointments.edit", "expenses.view", "expenses.edit", "expenses.void",
+			"timesheet.self", "staff.view", "staff.timesheets"},
+		"Front desk":      {"appointments.view", "appointments.edit", "timesheet.self"},
+		"Mechanic":        {"timesheet.self"},
+		"Inventory clerk": {"timesheet.self"},
 	}},
 }
 
